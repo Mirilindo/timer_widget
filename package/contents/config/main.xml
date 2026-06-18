@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="fontSize" type="Int">
+      <label>Digits font size</label>
+      <default>48</default>
+    </entry>
+    <entry name="defaultDuration" type="Int">
+      <label>Default duration, in seconds</label>
+      <default>300</default>
+    </entry>
+
+    <entry name="showStartButton" type="Bool">
+      <label>Show the Start/Pause button</label>
+      <default>true</default>
+    </entry>
+    <entry name="showResetButton" type="Bool">
+      <label>Show the Reset button</label>
+      <default>true</default>
+    </entry>
+    <!-- 0 = left, 1 = right, 2 = top, 3 = bottom (relative to the digits) -->
+    <entry name="startButtonSide" type="Int">
+      <label>Start button side (0=left, 1=right, 2=top, 3=bottom)</label>
+      <default>0</default>
+    </entry>
+    <entry name="resetButtonSide" type="Int">
+      <label>Reset button side (0=left, 1=right, 2=top, 3=bottom)</label>
+      <default>1</default>
+    </entry>
+    <!-- Show the text label on the buttons (false = icon only) -->
+    <entry name="showStartLabel" type="Bool">
+      <label>Show the text label on the Start/Pause button</label>
+      <default>true</default>
+    </entry>
+    <entry name="showResetLabel" type="Bool">
+      <label>Show the text label on the Reset button</label>
+      <default>true</default>
+    </entry>
+
+    <!-- Durations offered in the right-click menu, in minutes, comma separated -->
+    <entry name="presetMinutes" type="String">
+      <label>Preset menu durations (minutes, comma separated)</label>
+      <default>5,10,15,25,45,60</default>
+    </entry>
+
+    <!-- Number of times the beep plays when reaching zero. 0 = no sound. -->
+    <entry name="beepCount" type="Int">
+      <label>Beep repeats at end (0 = no sound)</label>
+      <default>3</default>
+    </entry>
+  </group>
+</kcfg>
