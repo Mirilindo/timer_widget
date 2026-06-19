@@ -49,6 +49,12 @@ Most languages are reviewed; some of the rarer ones are machine translations and
 refinement — contributions from native speakers are very welcome (see
 `package/contents/translations/strings.js`).
 
+## Credits
+
+- End sound: *[Beep 6](https://pixabay.com/sound-effects/beep-6-96243/)* by
+  [freesound_community](https://pixabay.com/users/freesound_community-46691455/) via Pixabay
+  (Pixabay Content License — free to use, no attribution required, credited here anyway).
+
 ## License
 
 [GNU GPL v3](LICENSE) or later.
