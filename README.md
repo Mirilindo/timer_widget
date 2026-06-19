@@ -5,7 +5,7 @@ fact that the built-in `org.kde.plasma.timer` has no font settings and its digit
 Here the font is driven explicitly, so the digits can be as big as you want, on the desktop or
 in a panel.
 
-![Big Timer](screenshots/desktop.png)
+![Big Timer](screenshots/widget.png)
 
 ## Features
 
@@ -21,6 +21,16 @@ in a panel.
 - **End sound**: the bundled beep (repeatable N times, or off) or a **custom MP3**, plus an
   optional **desktop notification**
 - **26 languages** (all official EU languages + Russian + Ukrainian)
+
+## Screenshots
+
+In a panel:
+
+![In a panel](screenshots/panel.png)
+
+Settings:
+
+![Settings](screenshots/settings.png)
 
 ## Install
 
