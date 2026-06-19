@@ -1,6 +1,8 @@
 # store.kde.org listing — Big Timer
 
-Category: **Plasma 6 / Plasmoids** (the one queried by "Add Widgets → Get New Widgets").
+Category: **Plasma 6 Extensions** — this is the exact category the desktop
+"Add Widgets → Get New Widgets" dialog queries (from `plasmoids.knsrc`,
+`Categories=Plasma 6 Extensions`). Do NOT use "Plasma Mobile Widgets" (that is for phones).
 License: **GPL-3.0-or-later**. Tags: `timer, countdown, clock, panel, font`.
 
 ## Title
