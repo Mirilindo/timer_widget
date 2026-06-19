@@ -1,2 +1,6 @@
 # Réglages locaux de Claude Code (machine-spécifiques)
 .claude/settings.local.json
+
+# Archives de build (à attacher aux releases GitHub / uploader sur le store)
+*.plasmoid
+*.tar.gz

@@ -10,7 +10,6 @@ KCM.SimpleKCM {
     property alias cfg_resetButtonSide: resetSide.currentIndex
     property alias cfg_showStartLabel: showStartLabel.checked
     property alias cfg_showResetLabel: showResetLabel.checked
-    property alias cfg_presetMinutes: presets.text
 
     Translations { id: lang }
 
@@ -25,7 +24,7 @@ KCM.SimpleKCM {
             id: startSide
             Kirigami.FormData.label: lang.t("position")
             enabled: showStart.checked
-            // côté = par rapport aux chiffres (gauche / droite / haut / bas)
+            // side = relative to the digits (left / right / top / bottom)
             model: [lang.t("left"), lang.t("right"), lang.t("top"), lang.t("bottom")]
         }
         QQC2.CheckBox {
@@ -51,20 +50,6 @@ KCM.SimpleKCM {
             id: showResetLabel
             enabled: showReset.checked
             text: lang.t("showLabel")
-        }
-
-        Item { Kirigami.FormData.isSection: true }
-
-        QQC2.TextField {
-            id: presets
-            Kirigami.FormData.label: lang.t("menuDurations")
-            placeholderText: "5,10,15,25,45,60"
-        }
-        QQC2.Label {
-            text: lang.t("menuDurationsHint")
-            font: Kirigami.Theme.smallFont
-            opacity: 0.7
-            wrapMode: Text.WordWrap
         }
     }
 }

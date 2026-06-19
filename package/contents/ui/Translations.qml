@@ -1,17 +1,17 @@
 import QtQuick
 import "../translations/strings.js" as Strings
 
-// Système de traduction maison basé sur translations/strings.js.
-// Usage : Translations { id: lang }  puis  lang.t("start") / lang.tr("setMin", 5)
-// Les données sont importées en JS (résolues au chargement) -> fiable et synchrone,
-// contrairement à l'ancien chargement XHR de strings.json qui échouait dans le plasmoïde.
+// Small in-house translation system based on translations/strings.js.
+// Usage: Translations { id: lang }  then  lang.t("start") / lang.tr("set", "05:00")
+// Data is imported as JS (resolved at load time) -> reliable and synchronous, unlike the
+// old XHR loading of strings.json which failed silently inside the installed plasmoid.
 QtObject {
     id: root
 
-    // "en", "fr", ... d'après la locale système
+    // "en", "fr", ... from the system locale
     readonly property string locale: Qt.locale().name.substring(0, 2)
 
-    // Renvoie la chaîne traduite ; repli sur l'anglais ; repli sur la clé brute.
+    // Returns the translated string; falls back to English; falls back to the raw key.
     function t(key) {
         var loc = Strings.data[root.locale]
         if (loc && loc[key] !== undefined) return loc[key]
@@ -20,7 +20,7 @@ QtObject {
         return key
     }
 
-    // Comme t() mais remplace %1 par une valeur.
+    // Like t() but substitutes %1 with a value.
     function tr(key, a1) {
         return String(t(key)).replace("%1", a1)
     }

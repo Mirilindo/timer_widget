@@ -1,7 +1,7 @@
 import QtQuick
 import org.kde.plasma.configuration
 
-// Noms de catégories en anglais (le dialogue de config ne charge pas le JSON).
+// Category names are hardcoded in English (the config dialog title list is not translated here).
 ConfigModel {
     ConfigCategory {
         name: "Appearance"
@@ -9,9 +9,14 @@ ConfigModel {
         source: "configAppearance.qml"
     }
     ConfigCategory {
-        name: "Buttons & menu"
+        name: "Buttons"
         icon: "configure"
         source: "configButtons.qml"
+    }
+    ConfigCategory {
+        name: "Menu durations"
+        icon: "chronometer"
+        source: "configDurations.qml"
     }
     ConfigCategory {
         name: "Sound"

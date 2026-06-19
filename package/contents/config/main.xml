@@ -9,9 +9,33 @@
       <label>Digits font size</label>
       <default>48</default>
     </entry>
+    <!-- Empty = system default font family -->
+    <entry name="fontFamily" type="String">
+      <label>Digits font family (empty = default)</label>
+      <default></default>
+    </entry>
+    <!-- Empty = theme text color -->
+    <entry name="fontColor" type="String">
+      <label>Digits color (empty = theme color)</label>
+      <default></default>
+    </entry>
     <entry name="defaultDuration" type="Int">
       <label>Default duration, in seconds</label>
       <default>300</default>
+    </entry>
+
+    <!-- Warning color: digits switch to warnColor when remaining <= warnPercent % of the target -->
+    <entry name="warnEnabled" type="Bool">
+      <label>Change the digits color near the end</label>
+      <default>false</default>
+    </entry>
+    <entry name="warnPercent" type="Int">
+      <label>Warning threshold (% of total remaining)</label>
+      <default>20</default>
+    </entry>
+    <entry name="warnColor" type="String">
+      <label>Warning color</label>
+      <default>#e74c3c</default>
     </entry>
 
     <entry name="showStartButton" type="Bool">
@@ -23,13 +47,14 @@
       <default>true</default>
     </entry>
     <!-- 0 = left, 1 = right, 2 = top, 3 = bottom (relative to the digits) -->
+    <!-- Defaults: Reset on the left, Start on the right -->
     <entry name="startButtonSide" type="Int">
       <label>Start button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>0</default>
+      <default>1</default>
     </entry>
     <entry name="resetButtonSide" type="Int">
       <label>Reset button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>1</default>
+      <default>0</default>
     </entry>
     <!-- Show the text label on the buttons (false = icon only) -->
     <entry name="showStartLabel" type="Bool">
@@ -41,16 +66,27 @@
       <default>true</default>
     </entry>
 
-    <!-- Durations offered in the right-click menu, in minutes, comma separated -->
-    <entry name="presetMinutes" type="String">
-      <label>Preset menu durations (minutes, comma separated)</label>
-      <default>5,10,15,25,45,60</default>
+    <!-- Right-click menu durations, JSON array: [{"s": seconds, "n": "optional name"}, ...]
+         Order in the array = order in the menu. -->
+    <entry name="presetDurations" type="String">
+      <label>Preset menu durations (JSON: [{"s":seconds,"n":"name"}])</label>
+      <default>[{"s":300,"n":""},{"s":600,"n":""},{"s":900,"n":""},{"s":1500,"n":""},{"s":2700,"n":""},{"s":3600,"n":""}]</default>
     </entry>
 
     <!-- Number of times the beep plays when reaching zero. 0 = no sound. -->
     <entry name="beepCount" type="Int">
       <label>Beep repeats at end (0 = no sound)</label>
       <default>3</default>
+    </entry>
+    <!-- Custom end sound (file URL). Empty = use the bundled beep. -->
+    <entry name="customSoundPath" type="String">
+      <label>Custom end sound file (empty = bundled beep)</label>
+      <default></default>
+    </entry>
+    <!-- Show a desktop notification when the countdown reaches zero. -->
+    <entry name="showNotification" type="Bool">
+      <label>Show a notification at the end</label>
+      <default>true</default>
     </entry>
   </group>
 </kcfg>
