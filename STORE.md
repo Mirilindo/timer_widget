@@ -71,3 +71,4 @@ First public release.
 2. `panel.png` — widget in a panel
 3. `compact.png` — compact panel mode (progress ring / bar around a logo)
 4. `settings.png` — settings (Appearance, incl. the compact options)
+5. `settings_duration.png` — settings (Menu durations editor)

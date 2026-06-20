@@ -38,6 +38,10 @@ Settings:
 
 ![Settings](screenshots/settings.png)
 
+Settings — menu durations editor:
+
+![Menu durations](screenshots/settings_duration.png)
+
 ## Install
 
 ```bash
