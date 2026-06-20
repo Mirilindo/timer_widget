@@ -166,7 +166,8 @@ PlasmoidItem {
         id: setTimeAction
         text: lang.t("setTime")
         icon.name: "document-edit"
-        onTriggered: setTimeWindow.openWith(root.target)
+        // Always open the free-duration dialog at 00:00:00.
+        onTriggered: setTimeWindow.openWith(0)
     }
 
     property var presetActions: []
@@ -287,7 +288,148 @@ PlasmoidItem {
         }
     }
 
-    preferredRepresentation: fullRepresentation
+    // On the desktop we always want the inline digits. In a panel, honor the user's
+    // choice: a compact progress ring (click -> popup with the digits) when enabled,
+    // otherwise keep the inline digits (the project's original behavior).
+    preferredRepresentation: Plasmoid.configuration.compactInPanel ? null : fullRepresentation
+
+    // By default Plasma caps a compact applet to the standard panel icon size, leaving a
+    // big margin in a thick panel. CanFillArea lets the ring fill the whole thickness.
+    // (The enum lives on Plasma::Applet, i.e. the Plasmoid attached object.)
+    Plasmoid.constraintHints: Plasmoid.configuration.compactInPanel
+        ? Plasmoid.CanFillArea : Plasmoid.NoHint
+
+    // Tooltip on the compact ring: remaining time
+    toolTipSubText: root.fmt(root.remaining)
+
+    // Compact panel representation: a logo (chronometer icon or a custom image) with the
+    // progress shown either as a ring around it or as a bar below it.
+    compactRepresentation: MouseArea {
+        id: compactRoot
+        // Keep the applet square against the panel thickness: in a horizontal panel the
+        // height is fixed -> lock the width to it; in a vertical panel the width is fixed
+        // -> lock the height to it. (Avoids the width<->height binding loop.)
+        readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+        Layout.minimumWidth: vertical ? Kirigami.Units.iconSizes.small : compactRoot.height
+        Layout.maximumWidth: vertical ? Infinity : compactRoot.height
+        Layout.minimumHeight: vertical ? compactRoot.width : Kirigami.Units.iconSizes.small
+        Layout.maximumHeight: vertical ? compactRoot.width : Infinity
+
+        onClicked: root.expanded = !root.expanded
+
+        // Largest square that fits the applet, used to size the ring and the logo.
+        readonly property int face: Math.min(width, height)
+        readonly property bool barMode: Plasmoid.configuration.compactBar
+
+        // Progress shared by both styles. "Empty" mode (default) shows the time left
+        // (full at start -> empties); "Fill" mode shows the time elapsed (empty at start).
+        readonly property real progress: root.target > 0
+            ? Math.max(0, Math.min(1, root.remaining / root.target)) : 0
+        readonly property real fraction: Plasmoid.configuration.compactRingFill
+            ? (1 - progress) : progress
+        readonly property color trackColor: Kirigami.Theme.textColor
+        readonly property color arcColor: root.remaining <= 0
+            ? Kirigami.Theme.negativeTextColor
+            : root.warnActive
+                ? (Plasmoid.configuration.warnColor !== ""
+                   ? Plasmoid.configuration.warnColor
+                   : Kirigami.Theme.negativeTextColor)
+                : Kirigami.Theme.highlightColor
+
+        // The logo source: a custom image if set, otherwise the chronometer icon.
+        readonly property string logoSource: Plasmoid.configuration.compactIconPath !== ""
+            ? Plasmoid.configuration.compactIconPath : "chronometer"
+
+        // ----- RING STYLE: ring drawn around a centered logo -----
+        Canvas {
+            id: ring
+            anchors.fill: parent
+            visible: !compactRoot.barMode
+
+            Component.onCompleted: requestPaint()
+            Connections {
+                target: compactRoot
+                function onFractionChanged() { ring.requestPaint() }
+                function onArcColorChanged() { ring.requestPaint() }
+            }
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.reset()
+                var size = Math.min(width, height)
+                var lineW = Math.max(2, Math.round(size * 0.14))
+                // Centered on the whole canvas; outer edge of the stroke on the square edge.
+                var cx = width / 2
+                var cy = height / 2
+                var r = size / 2 - lineW / 2
+                if (r <= 0) return
+
+                // Track (full circle, faint)
+                ctx.beginPath()
+                ctx.lineWidth = lineW
+                ctx.strokeStyle = compactRoot.trackColor
+                ctx.globalAlpha = 0.25
+                ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+                ctx.stroke()
+
+                // Progress arc, clockwise from 12 o'clock
+                ctx.globalAlpha = 1.0
+                ctx.beginPath()
+                ctx.lineWidth = lineW
+                ctx.strokeStyle = compactRoot.arcColor
+                ctx.lineCap = "round"
+                var start = -Math.PI / 2
+                ctx.arc(cx, cy, r, start, start + 2 * Math.PI * compactRoot.fraction)
+                ctx.stroke()
+            }
+        }
+
+        Kirigami.Icon {
+            anchors.centerIn: parent
+            visible: !compactRoot.barMode && Plasmoid.configuration.compactIconScale > 0
+            width: Math.round(compactRoot.face * Plasmoid.configuration.compactIconScale / 100)
+            height: width
+            source: compactRoot.logoSource
+        }
+
+        // ----- BAR STYLE: logo on top, progress bar below -----
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Math.round(compactRoot.face * 0.08)
+            visible: compactRoot.barMode
+            spacing: Kirigami.Units.smallSpacing
+
+            Kirigami.Icon {
+                Layout.alignment: Qt.AlignCenter
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.maximumHeight: compactRoot.face * Plasmoid.configuration.compactIconScale / 100
+                visible: Plasmoid.configuration.compactIconScale > 0
+                source: compactRoot.logoSource
+            }
+
+            // Progress bar (faint track + colored fill)
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignBottom
+                implicitHeight: Math.max(3, Math.round(compactRoot.face * 0.14))
+                radius: height / 2
+                color: Qt.rgba(compactRoot.trackColor.r, compactRoot.trackColor.g,
+                               compactRoot.trackColor.b, 0.25)
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width * compactRoot.fraction
+                    height: parent.height
+                    radius: parent.radius
+                    color: compactRoot.arcColor
+                }
+            }
+        }
+    }
 
     // A button loader: instantiated only when active, and excluded from the layout
     // otherwise (visible:false) so it takes no cell nor spacing.

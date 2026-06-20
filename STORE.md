@@ -26,6 +26,8 @@ Features:
 - Clean duration editor (hh:mm:ss, optional names, reordering)
 - Warning color when the remaining time drops below a configurable threshold
 - End sound: bundled beep (repeatable or off) or a custom MP3, plus an optional notification
+- Optional compact panel mode: a logo with a progress ring around it or a bar below it
+  (with a custom logo image), for thin panels
 - 26 languages (all official EU languages + Russian + Ukrainian)
 
 Source code: https://github.com/Mirilindo/timer_widget
@@ -38,7 +40,20 @@ réglable, pour des chiffres lisibles sur le bureau comme dans un panneau.
 Fonctions : police réglable ; Démarrer/Pause/Réinitialiser (compte à rebours calé sur l'horloge,
 résiste à la veille) ; boutons sur les 4 côtés, masquables, icône seule possible ; menu clic droit
 (durées prédéfinies + saisie d'une durée libre) ; éditeur de durées hh:mm:ss avec noms et ordre ;
-couleur d'alerte en fin de compte ; son de fin personnalisable (MP3) + notification ; 26 langues.
+couleur d'alerte en fin de compte ; son de fin personnalisable (MP3) + notification ;
+mode compact pour les panneaux (logo + anneau ou barre de progression, image de logo perso) ;
+26 langues.
+
+## Changelog — v1.1
+Compact panel mode and a few refinements.
+- Optional **compact representation in panels**: a logo with the progress shown as a
+  ring around it or as a bar below it (click to open the full timer). Off by default,
+  so the inline big digits stay the default everywhere.
+- Ring/bar can **empty** (time left) or **fill** (time elapsed); adjustable icon size.
+- **Custom logo image** for the compact mode (square recommended for the ring style).
+- Fills the full panel thickness in thick panels (`CanFillArea`).
+- "Set a time…" dialog now opens at 00:00:00.
+- Compact-mode labels translated into all 26 languages.
 
 ## Changelog — v1.0
 First public release.

@@ -38,6 +38,36 @@
       <default>#e74c3c</default>
     </entry>
 
+    <!-- In a panel, show a compact progress ring (click = popup with the digits)
+         instead of the inline digits. Has no effect on the desktop. -->
+    <entry name="compactInPanel" type="Bool">
+      <label>Show a compact ring in panels instead of the digits</label>
+      <default>false</default>
+    </entry>
+    <!-- Compact ring direction: false = empties as the countdown runs (full at start),
+         true = fills up as time elapses (empty at start). -->
+    <entry name="compactRingFill" type="Bool">
+      <label>Fill the compact ring as time elapses (instead of emptying)</label>
+      <default>false</default>
+    </entry>
+    <!-- Size of the chronometer icon inside the ring, as a % of the panel thickness.
+         0 = no icon (ring only). -->
+    <entry name="compactIconScale" type="Int">
+      <label>Compact icon size (% of the panel thickness)</label>
+      <default>50</default>
+    </entry>
+    <!-- Compact progress style: false = ring around the logo, true = bar below the logo. -->
+    <entry name="compactBar" type="Bool">
+      <label>Show a progress bar below the logo instead of a ring around it</label>
+      <default>false</default>
+    </entry>
+    <!-- Custom logo image (file URL) for the compact representation. Empty = chronometer.
+         For the ring style, a square image works best. -->
+    <entry name="compactIconPath" type="String">
+      <label>Custom logo image (empty = default chronometer icon)</label>
+      <default></default>
+    </entry>
+
     <entry name="showStartButton" type="Bool">
       <label>Show the Start/Pause button</label>
       <default>true</default>
