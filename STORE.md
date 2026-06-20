@@ -66,8 +66,8 @@ First public release.
 - Custom end sound (MP3) and end-of-countdown notification
 - 26 languages (EU + Russian + Ukrainian)
 
-## Screenshots to attach (capture before upload)
-1. Widget on the desktop with big digits
-2. Right-click menu (Start / Reset / Set durations / Set a time…)
-3. Settings — Appearance (font, color, warning color)
-4. Settings — Menu durations (the list editor)
+## Screenshots to attach (in screenshots/)
+1. `widget.png` — widget on the desktop with big digits
+2. `panel.png` — widget in a panel
+3. `compact.png` — compact panel mode (progress ring / bar around a logo)
+4. `settings.png` — settings (Appearance, incl. the compact options)

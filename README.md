@@ -20,6 +20,8 @@ in a panel.
   threshold (% of total)
 - **End sound**: the bundled beep (repeatable N times, or off) or a **custom MP3**, plus an
   optional **desktop notification**
+- **Compact panel mode** (optional): a logo with the progress as a **ring** around it or a
+  **bar** below it — with a **custom logo image** — for thin panels (click to open the full timer)
 - **26 languages** (all official EU languages + Russian + Ukrainian)
 
 ## Screenshots
@@ -27,6 +29,10 @@ in a panel.
 In a panel:
 
 ![In a panel](screenshots/panel.png)
+
+Compact panel mode (ring / bar around a logo):
+
+![Compact mode](screenshots/compact.png)
 
 Settings:
 
