@@ -13,7 +13,7 @@
         "Id": "io.github.mirilindo.bigtimer",
         "License": "GPL-3.0-or-later",
         "Name": "Big Timer",
-        "Version": "1.1",
+        "Version": "1.2",
         "Website": "https://github.com/Mirilindo"
     },
     "X-Plasma-API-Minimum-Version": "6.0"

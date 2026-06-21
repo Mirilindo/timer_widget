@@ -13,12 +13,17 @@ KCM.SimpleKCM {
     property alias cfg_warnEnabled: warnEnable.checked
     property alias cfg_warnPercent: warnSpin.value
     property alias cfg_warnColor: warnColor.value
-    property alias cfg_compactInPanel: compactCheck.checked
+    property alias cfg_displayMode: displayModeCombo.currentIndex
     property alias cfg_compactRingFill: compactFillCheck.checked
     property alias cfg_compactIconScale: compactIconSpin.value
+    property alias cfg_compactRingMargin: compactMarginSpin.value
+    property alias cfg_compactRingThickness: compactThickSpin.value
     property alias cfg_compactBar: compactBarCheck.checked
     property string cfg_fontFamily
     property string cfg_compactIconPath
+
+    // Compact settings are relevant only when not in normal mode.
+    readonly property bool compactOn: displayModeCombo.currentIndex !== 0
 
     Translations { id: lang }
 
@@ -82,35 +87,53 @@ KCM.SimpleKCM {
 
         Item { Kirigami.FormData.isSection: true }
 
-        // --- Compact representation when placed in a panel ---
-        QQC2.CheckBox {
-            id: compactCheck
-            Kirigami.FormData.label: lang.t("compactTitle")
-            text: lang.t("compactPanel")
+        // --- Display mode + compact representation ---
+        QQC2.ComboBox {
+            id: displayModeCombo
+            Kirigami.FormData.label: lang.t("displayMode")
+            // 0 = normal, 1 = compact (logo only), 2 = compact + click to switch
+            model: [lang.t("modeNormal"), lang.t("modeCompact"), lang.t("modeSwitch")]
         }
         QQC2.CheckBox {
             id: compactFillCheck
-            enabled: compactCheck.checked
+            enabled: page.compactOn
             text: lang.t("compactFill")
         }
         QQC2.SpinBox {
             id: compactIconSpin
             Kirigami.FormData.label: lang.t("compactIconSize")
-            enabled: compactCheck.checked
+            enabled: page.compactOn
             from: 0
             to: 100
             stepSize: 5
         }
+        QQC2.SpinBox {
+            id: compactMarginSpin
+            Kirigami.FormData.label: lang.t("compactRingMargin")
+            // The margin only insets the ring; the bar style has its own padding.
+            enabled: page.compactOn && !compactBarCheck.checked
+            from: 0
+            to: 30
+            stepSize: 1
+        }
+        QQC2.SpinBox {
+            id: compactThickSpin
+            Kirigami.FormData.label: lang.t("compactRingThickness")
+            enabled: page.compactOn
+            from: 4
+            to: 40
+            stepSize: 1
+        }
         QQC2.CheckBox {
             id: compactBarCheck
-            enabled: compactCheck.checked
+            enabled: page.compactOn
             text: lang.t("compactBar")
         }
 
         // --- Custom logo image ---
         RowLayout {
             Kirigami.FormData.label: lang.t("compactLogo")
-            enabled: compactCheck.checked
+            enabled: page.compactOn
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.TextField {
@@ -133,7 +156,7 @@ KCM.SimpleKCM {
             }
         }
         QQC2.Label {
-            enabled: compactCheck.checked
+            enabled: page.compactOn
             text: lang.t("compactLogoHint")
             font: Kirigami.Theme.smallFont
             opacity: 0.7

@@ -20,8 +20,10 @@ QtObject {
         return key
     }
 
-    // Like t() but substitutes %1 with a value.
-    function tr(key, a1) {
-        return String(t(key)).replace("%1", a1)
+    // Like t() but substitutes %1 (and optionally %2) with values.
+    function tr(key, a1, a2) {
+        var s = String(t(key)).replace("%1", a1)
+        if (a2 !== undefined) s = s.replace("%2", a2)
+        return s
     }
 }
