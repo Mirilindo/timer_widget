@@ -44,6 +44,39 @@ couleur d'alerte en fin de compte ; son de fin personnalisable (MP3) + notificat
 mode compact pour les panneaux (logo + anneau ou barre de progression, image de logo perso) ;
 26 langues.
 
+## Changelog — v1.2
+Button overhaul and three display modes.
+- **Per-button configuration** for Start/Pause, Reset, **+1 min** and **−1 min**: show,
+  position (4 sides), label, **size** and **order**.
+- New **+1 / −1 min** quick buttons with a **configurable step** (in seconds).
+- Option to lay the **side buttons in a row** instead of stacked.
+- Option: a **second Reset click** returns to the default duration (toggleable).
+- **3 display modes**: *Normal* (digits always shown), *Compact* (logo + ring/bar), and
+  *Compact + click-to-switch* (click the logo to reveal the timer inline in the panel — no
+  popup; click again to go back to the logo).
+- In the compact modes: **just the logo when idle**, ring or bar progress **while running**.
+- **Custom rectangular logo** support (keeps its aspect ratio; the applet follows the
+  image shape, except the ring which stays square).
+- **End notification** now shows the duration's name (if any) and how long it was.
+- New **defaults**: compact click-to-switch, 15 min, font size 32, durations
+  5/10/15/30/45/60 min, progress bar, end-color warning enabled.
+- 62 i18n keys across all 26 languages.
+
+### Changelog — v1.2 (FR)
+- **Configuration par bouton** pour Démarrer/Pause, Réinitialiser, **+1 min** et **−1 min** :
+  afficher, position (4 côtés), texte, **taille** et **ordre**.
+- Nouveaux boutons rapides **+1 / −1 min** avec **pas réglable** (en secondes).
+- Option **« boutons latéraux en ligne »** (au lieu d'empilés).
+- Option : **2ᵉ clic sur Réinitialiser** → durée par défaut (activable).
+- **3 modes d'affichage** : *Normal* (chiffres toujours visibles), *Compact* (logo +
+  anneau/barre) et *Compact avec clic pour basculer* (clic sur le logo → minuteur inline
+  dans le panneau, sans fenêtre ; reclic → retour au logo).
+- En mode compact : **logo seul au repos**, anneau ou barre **pendant le décompte**.
+- Prise en charge des **logos personnalisés rectangulaires** (ratio respecté).
+- **Notification de fin** : nom de la durée + durée écoulée.
+- Nouveaux **défauts** : compact clic-pour-basculer, 15 min, police 32, durées
+  5/10/15/30/45/60 min, barre, alerte de fin activée.
+
 ## Changelog — v1.1
 Compact panel mode and a few refinements.
 - Optional **compact representation in panels**: a logo with the progress shown as a
