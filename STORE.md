@@ -3,46 +3,104 @@
 Category: **Plasma 6 Extensions** — this is the exact category the desktop
 "Add Widgets → Get New Widgets" dialog queries (from `plasmoids.knsrc`,
 `Categories=Plasma 6 Extensions`). Do NOT use "Plasma Mobile Widgets" (that is for phones).
-License: **GPL-3.0-or-later**. Tags: `timer, countdown, clock, panel, font`.
+License: **GPL-3.0-or-later**. Tags: `timer, countdown, stopwatch, clock, panel, font`.
 
 ## Title
 Big Timer
 
 ## Summary (one line)
-A countdown timer with an adjustable font size — big, readable digits anywhere.
+A countdown timer and stopwatch with an adjustable font size — big, readable digits anywhere.
 
 ## Description (EN)
-Big Timer is a countdown timer for KDE Plasma 6 whose digits you can actually make big.
+Big Timer is a countdown timer and stopwatch for KDE Plasma 6 whose digits you can actually make big.
 
 Unlike the built-in timer, the font (size, family and color) is fully configurable, so the
-digits stay readable on the desktop or in a panel.
+digits stay readable on the desktop, and the time fits the panel it sits in.
 
 Features:
+- Countdown and stopwatch in the same widget, started from the right-click menu or by clicking
+  the digits while stopped
 - Adjustable font: size, family and color of the digits
-- Start / Pause / Reset, clock-based countdown (accurate, survives system sleep)
-- Buttons on any side of the digits (left/right/top/bottom), each hideable, icon-only possible
-- Right-click menu: Start, Reset, configurable preset durations (shown as "Set hh:mm:ss [name]"),
-  and a "Set a time…" dialog for any custom duration
-- Clean duration editor (hh:mm:ss, optional names, reordering)
-- Warning color when the remaining time drops below a configurable threshold
-- End sound: bundled beep (repeatable or off) or a custom MP3, plus an optional notification
-- Optional compact panel mode: a logo with a progress ring around it or a bar below it
-  (with a custom logo image), for thin panels
-- 26 languages (all official EU languages + Russian + Ukrainian)
+- Start / Pause / Reset, clock-based (accurate, survives system sleep)
+- Right-click menu: your countdowns in plain words ("Countdown 15 min"), any other duration,
+  and "Start stopwatch"
+- Countdown editor (hh:mm:ss, optional names, reordering)
+- Remembers the mode and the last chosen duration
+- In a panel: the time, the icon with a progress ring or bar, or the icon while idle and the
+  time once started
+- Four button layouts, optional text, adjustable size, optional +/− buttons
+- Warning color near the end of a countdown
+- End of countdown: bundled beep (repeatable or off) or a custom sound, plus an optional notification
+- 26 languages (all official EU languages + Russian + Ukrainian); English and French are
+  reviewed, the others are machine translations: corrections are welcome on GitHub
+
+Upgrading from 1.2 or earlier: the widget ID changed, so remove the old Big Timer from your
+desktop or panel and add it again (settings start from the new defaults).
 
 Source code: https://github.com/Mirilindo/timer_widget
 
 ## Description (FR)
-Big Timer est un minuteur (compte à rebours) pour KDE Plasma 6 dont on peut enfin grossir les
+Big Timer est un minuteur et un chronomètre pour KDE Plasma 6 dont on peut enfin grossir les
 chiffres. Contrairement au minuteur intégré, la police (taille, famille, couleur) est entièrement
-réglable, pour des chiffres lisibles sur le bureau comme dans un panneau.
+réglable : les chiffres restent lisibles sur le bureau, et le temps s'adapte au panneau.
 
-Fonctions : police réglable ; Démarrer/Pause/Réinitialiser (compte à rebours calé sur l'horloge,
-résiste à la veille) ; boutons sur les 4 côtés, masquables, icône seule possible ; menu clic droit
-(durées prédéfinies + saisie d'une durée libre) ; éditeur de durées hh:mm:ss avec noms et ordre ;
-couleur d'alerte en fin de compte ; son de fin personnalisable (MP3) + notification ;
-mode compact pour les panneaux (logo + anneau ou barre de progression, image de logo perso) ;
-26 langues.
+Fonctions : minuteur et chronomètre dans le même widget, lancés depuis le clic droit ou d'un clic
+sur les chiffres à l'arrêt ; police réglable ; Démarrer/Pause/Réinitialiser calés sur l'horloge
+(précis, résistent à la veille) ; menu clic droit avec vos minuteurs en clair (« Minuteur 15 min »),
+une durée libre et « Lancer le chronomètre » ; éditeur de durées hh:mm:ss avec noms et ordre ;
+mémorise le mode et la dernière durée ; dans un panneau : le temps, l'icône avec un anneau ou une
+barre de progression, ou l'icône au repos puis le temps une fois lancé ; quatre dispositions de
+boutons, texte et taille réglables, boutons +/− en option ; couleur d'alerte en fin de minuteur ;
+son de fin personnalisable + notification ; 26 langues (anglais et français relus, les autres
+traduites automatiquement : vos corrections sont les bienvenues sur GitHub).
+
+Mise à jour depuis la 1.2 ou avant : l'identifiant du widget a changé, retirez l'ancien Big Timer
+du bureau ou du panneau et ajoutez-le de nouveau (les réglages repartent des nouveaux défauts).
+
+## Changelog — v1.3
+Stopwatch mode, and a simpler widget.
+- **Stopwatch**: "Start stopwatch" in the right-click menu counts up from zero. Picking a
+  countdown switches back. With the "icon with progress" panel view, the ring or bar turns
+  once per minute.
+- **Right-click menu** rewritten: your countdowns in plain words ("Countdown 15 min",
+  "Countdown 1 h"), "Countdown… (other duration)", then "Start stopwatch", separated from
+  Plasma's own entries.
+- **Click the digits while stopped** to pick a countdown or start the stopwatch (the
+  right-click menu without Start/Reset).
+- **In a panel, the time is shown by default**, sized to the panel (it also fits vertical
+  panels). Click it to open the full timer in the standard Plasma popup. Two other choices:
+  the icon with progress, or the icon while idle and the time once started.
+- **Reset always does the same thing**: back to the chosen duration, or to zero for the
+  stopwatch. The widget remembers the mode and the last chosen duration.
+- **Settings reorganized**, from 41 to 21: *Appearance*, *Panel*, *Buttons* (four layouts
+  instead of per-button settings), *Countdowns*, *End of countdown*.
+- Removed: the "default duration", the second-Reset-click option and the three display modes
+  of 1.2 (Normal / Compact / Compact + click-to-switch).
+- Buttons without text by default (the name shows as a tooltip).
+- **New widget ID** (`io.github.mirilindo.bigtimer`): remove the old Big Timer and add it again.
+
+### Changelog — v1.3 (FR)
+Mode chronomètre, et un widget plus simple.
+- **Chronomètre** : « Lancer le chronomètre » dans le clic droit compte à partir de zéro. Choisir
+  un minuteur repasse en minuteur. Avec l'affichage « icône avec la progression » du panneau,
+  l'anneau ou la barre fait un tour par minute.
+- **Menu clic droit** refait : vos minuteurs en clair (« Minuteur 15 min », « Minuteur 1 h »),
+  « Minuteur… (autre durée) », puis « Lancer le chronomètre », séparés des entrées de Plasma.
+- **Clic sur les chiffres à l'arrêt** : choisir un minuteur ou lancer le chronomètre (le menu
+  clic droit, sans Démarrer/Réinitialiser).
+- **Dans un panneau, le temps est affiché par défaut**, à la taille du panneau (y compris
+  vertical). Un clic ouvre le minuteur complet dans la bulle standard de Plasma. Deux autres
+  choix : l'icône avec la progression, ou l'icône au repos puis le temps une fois lancé.
+- **Réinitialiser fait toujours la même chose** : retour à la durée choisie, ou à zéro pour le
+  chronomètre. Le widget mémorise le mode et la dernière durée choisie.
+- **Réglages réorganisés**, de 41 à 21, en cinq pages (titres en anglais) : *Appearance*,
+  *Panel*, *Buttons* (quatre dispositions au lieu des réglages par bouton), *Countdowns*,
+  *End of countdown*.
+- Supprimés : la « durée par défaut », l'option du 2ᵉ clic sur Réinitialiser et les trois modes
+  d'affichage de la 1.2 (Normal / Compact / Compact avec clic pour basculer).
+- Boutons sans texte par défaut (le nom s'affiche en infobulle).
+- **Nouvel identifiant** (`io.github.mirilindo.bigtimer`) : retirez l'ancien Big Timer et
+  ajoutez-le de nouveau.
 
 ## Changelog — v1.2
 Button overhaul and three display modes.
@@ -101,7 +159,9 @@ First public release.
 
 ## Screenshots to attach (in screenshots/)
 1. `widget.png` — widget on the desktop with big digits
-2. `panel.png` — widget in a panel
-3. `compact.png` — compact panel mode (progress ring / bar around a logo)
-4. `settings.png` — settings (Appearance, incl. the compact options)
-5. `settings_duration.png` — settings (Menu durations editor)
+2. `panel.png` — the time in a panel
+3. `popup.png` — the full timer opened from the panel
+4. `menu.png` — right-click menu (countdowns + stopwatch)
+5. `compact.png` — panel: icon with progress (ring / bar)
+6. `settings.png` — settings (Panel page)
+7. `settings_duration.png` — settings (Countdowns editor)

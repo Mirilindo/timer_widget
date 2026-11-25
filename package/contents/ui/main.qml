@@ -6,73 +6,120 @@ import QtMultimedia
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import org.kde.notification
 
 PlasmoidItem {
     id: root
 
-    // target   = chosen duration (default, or picked from the menu)
-    // remaining = seconds left (shown)
-    // endTime   = wall-clock epoch (ms) at which it hits zero; valid only while running.
+    // ===== State =====
+    // Two modes share the same display and buttons:
+    //  - countdown: counts down from `target` (a duration picked in the menu);
+    //  - stopwatch: counts up from zero, with no end.
+    // The mode and the last picked duration are remembered in hidden config entries, so
+    // the widget comes back as it was left (but stopped) after a Plasma restart.
+    readonly property bool chrono: Plasmoid.configuration.timerMode === 1
+    property bool running: false
+
+    // Countdown.
+    // target    = picked duration (seconds); remaining = seconds left (shown);
+    // endTime   = wall-clock epoch (ms) at which it hits zero, valid only while running.
     //             Counting from the clock instead of ticks keeps it accurate over long
     //             durations and survives system sleep.
-    property int target: Plasmoid.configuration.defaultDuration
-    property int remaining: target
-    property bool running: false
+    // targetName = optional name of the picked duration, shown in the notification.
+    property int target: 0
+    property int remaining: 0
     property double endTime: 0
-    // Name of the current duration (from the chosen menu preset), shown in the notification.
     property string targetName: ""
-    // Mode 2 (compact + switch): false = logo only, true = normal view shown inline.
-    property bool switched: false
 
-    readonly property int startSide: Plasmoid.configuration.startButtonSide
-    readonly property int resetSide: Plasmoid.configuration.resetButtonSide
-    readonly property int addSide: Plasmoid.configuration.addButtonSide
-    readonly property int subSide: Plasmoid.configuration.subButtonSide
+    // Stopwatch.
+    // elapsedMs    = time accumulated by finished run segments (the paused value);
+    // runStartTime = wall-clock epoch (ms) at which the current segment started;
+    // elapsed      = whole seconds shown, refreshed by the Timer below.
+    property double elapsedMs: 0
+    property double runStartTime: 0
+    property int elapsed: 0
 
-    // Warning color: active when the remaining time is <= warnPercent % of the total (and > 0)
-    readonly property bool warnActive: Plasmoid.configuration.warnEnabled
+    // Seconds shown by the digits and the tooltip, whatever the mode.
+    readonly property int shown: root.chrono ? root.elapsed : root.remaining
+    // Something has happened since the last reset (drives the compact ring/bar).
+    readonly property bool active: root.chrono
+        ? (root.running || root.elapsed > 0)
+        : (root.running || (root.target > 0 && root.remaining < root.target))
+
+    // Warning color: when the remaining time is <= warnPercent % of the total (and > 0).
+    readonly property bool warnActive: !root.chrono
+        && Plasmoid.configuration.warnEnabled
         && root.target > 0
         && root.remaining > 0
         && root.remaining <= root.target * Plasmoid.configuration.warnPercent / 100
 
+    // Digits color, shared by every view: red once the countdown is over, warning color
+    // near the end, otherwise the configured (or theme) color.
+    readonly property color digitsColor: (!root.chrono && root.remaining <= 0)
+        ? Kirigami.Theme.negativeTextColor
+        : root.warnActive
+          ? (Plasmoid.configuration.warnColor !== ""
+             ? Plasmoid.configuration.warnColor : Kirigami.Theme.negativeTextColor)
+          : (Plasmoid.configuration.fontColor !== ""
+             ? Plasmoid.configuration.fontColor : Kirigami.Theme.textColor)
+    readonly property string digitsFamily: Plasmoid.configuration.fontFamily !== ""
+        ? Plasmoid.configuration.fontFamily : Kirigami.Theme.defaultFont.family
+
+    Component.onCompleted: {
+        root.target = Math.max(1, Plasmoid.configuration.lastDuration)
+        root.remaining = root.target
+        root.targetName = Plasmoid.configuration.lastDurationName
+        root.rebuildPresets()
+    }
+
     // Translations (strings.js)
     Translations { id: lang }
 
+    // ===== Formatting =====
     function pad(n) { return n < 10 ? "0" + n : "" + n }
+    // Digits: mm:ss, or hh:mm:ss from one hour.
     function fmt(s) {
         var h = Math.floor(s / 3600)
         var m = Math.floor((s % 3600) / 60)
         var sec = s % 60
         return (h > 0 ? pad(h) + ":" : "") + pad(m) + ":" + pad(sec)
     }
-    // Human-readable duration with units; hours are omitted when zero, minutes too.
-    // e.g. 1h05min00s / 5min00s / 30s
+    // Readable duration, zero parts omitted: 15 min / 1 h / 1 h 30 min / 45 s.
+    // Used by the menu, the notification and the +/- button texts.
     function fmtLong(s) {
         var h = Math.floor(s / 3600)
         var m = Math.floor((s % 3600) / 60)
         var sec = s % 60
-        if (h > 0) return h + "h" + pad(m) + "min" + pad(sec) + "s"
-        if (m > 0) return m + "min" + pad(sec) + "s"
-        return sec + "s"
-    }
-    // Compact form of a step, for the +/- button labels (e.g. 1min / 30s / 1min30s).
-    function fmtStep(s) {
-        var m = Math.floor(s / 60)
-        var sec = s % 60
-        if (m > 0 && sec > 0) return m + "min" + pad(sec) + "s"
-        if (m > 0) return m + "min"
-        return sec + "s"
+        var parts = []
+        if (h > 0) parts.push(h + " h")
+        if (m > 0) parts.push(m + " min")
+        if (sec > 0) parts.push(sec + " s")
+        return parts.length > 0 ? parts.join(" ") : "0 s"
     }
 
+    // ===== Actions =====
+    function liveElapsedMs() {
+        return root.elapsedMs + (root.running ? (Date.now() - root.runStartTime) : 0)
+    }
     function start() {
+        if (root.chrono) {
+            root.runStartTime = Date.now()
+            root.running = true
+            return
+        }
         if (root.remaining <= 0) root.remaining = root.target
         root.endTime = Date.now() + root.remaining * 1000
         root.running = true
     }
     function pause() {
-        // freeze the remaining time from the clock
+        if (root.chrono) {
+            root.elapsedMs = root.liveElapsedMs()
+            root.running = false
+            root.elapsed = Math.floor(root.elapsedMs / 1000)
+            return
+        }
         root.remaining = Math.max(0, Math.ceil((root.endTime - Date.now()) / 1000))
         root.running = false
     }
@@ -80,27 +127,40 @@ PlasmoidItem {
         if (root.running) root.pause()
         else root.start()
     }
+    // Always the same thing: back to the picked duration (countdown) or to zero (stopwatch).
     function reset() {
-        // If already reset (nothing running, remaining == target) and the option is on,
-        // another click goes back to the default duration. Otherwise just reset to target.
-        if (Plasmoid.configuration.resetTwiceToDefault
-                && !root.running && root.remaining === root.target) {
-            root.target = Plasmoid.configuration.defaultDuration
-            root.targetName = ""
-        }
         root.running = false
         root.endTime = 0
         root.remaining = root.target
+        root.elapsedMs = 0
+        root.runStartTime = 0
+        root.elapsed = 0
     }
-    function setSeconds(s, name) {
-        root.running = false
-        root.endTime = 0
+    function setMode(m) {
+        if (Plasmoid.configuration.timerMode !== m) Plasmoid.configuration.timerMode = m
+    }
+    // Menu: a countdown duration. Switches to the countdown, ready to start (not started),
+    // and remembers the duration for the next session.
+    function chooseDuration(s, name) {
+        root.setMode(0)
+        root.reset()
         root.target = s
         root.remaining = s
         root.targetName = name ? name : ""
+        Plasmoid.configuration.lastDuration = s
+        Plasmoid.configuration.lastDurationName = root.targetName
     }
-    // Add (or remove, with a negative delta) time to the running/paused countdown.
+    // Menu: start the stopwatch from zero (restarts it if it was running). Written without
+    // relying on root.chrono, which may update only after the mode change is processed.
+    function startStopwatch() {
+        root.setMode(1)
+        root.reset()
+        root.runStartTime = Date.now()
+        root.running = true
+    }
+    // +/- buttons: add (or remove) time to the countdown, running or paused.
     function addSeconds(delta) {
+        if (root.chrono) return
         var base = root.running
             ? Math.max(0, Math.ceil((root.endTime - Date.now()) / 1000))
             : root.remaining
@@ -118,20 +178,14 @@ PlasmoidItem {
             }
         }
     }
-    function playBeep() {
+    function onFinished() {
         var n = Plasmoid.configuration.beepCount
         if (n > 0) {
             beep.stop()
             beep.loops = n
             beep.play()
         }
-    }
-    // Called when the countdown reaches zero
-    function onFinished() {
-        root.playBeep()
-        if (Plasmoid.configuration.showNotification) {
-            doneNotification.sendEvent()
-        }
+        if (Plasmoid.configuration.showNotification) doneNotification.sendEvent()
     }
 
     // End sound: custom file if set, otherwise the bundled beep
@@ -143,7 +197,6 @@ PlasmoidItem {
         audioOutput: AudioOutput { }
     }
 
-    // End-of-countdown notification
     Notification {
         id: doneNotification
         componentName: "plasma_workspace"
@@ -156,14 +209,17 @@ PlasmoidItem {
         text: root.fmtLong(root.target)
     }
 
-    // Recompute the remaining time from the clock while running. A short interval keeps
-    // the second boundary crisp; the value itself is derived from endTime, so there is no
-    // drift and a wake-from-sleep simply catches up.
+    // Recompute the shown time from the clock while running. The value is derived from
+    // endTime / runStartTime, so there is no drift and a wake-from-sleep simply catches up.
     Timer {
         interval: 200
         repeat: true
         running: root.running
         onTriggered: {
+            if (root.chrono) {
+                root.elapsed = Math.floor(root.liveElapsedMs() / 1000)
+                return
+            }
             var left = (root.endTime - Date.now()) / 1000
             if (left <= 0) {
                 root.remaining = 0
@@ -176,25 +232,15 @@ PlasmoidItem {
         }
     }
 
-    // Re-align to the default duration when it is changed in the settings (while stopped)
     Connections {
         target: Plasmoid.configuration
-        function onDefaultDurationChanged() {
-            if (!root.running) {
-                root.target = Plasmoid.configuration.defaultDuration
-                root.remaining = root.target
-                root.targetName = ""
-            }
-        }
-        function onPresetDurationsChanged() {
-            root.rebuildPresets()
-        }
-        function onDisplayModeChanged() {
-            root.switched = false
-        }
+        function onPresetDurationsChanged() { root.rebuildPresets() }
     }
 
-    // ----- Right-click menu -----
+    // ===== Menus =====
+    // Right-click menu:  Start/Pause, Reset | countdowns, other duration | stopwatch |
+    // (Plasma's own entries). Clicking the stopped digits opens the same menu, without
+    // Start/Reset (the "launch menu").
     PlasmaCore.Action {
         id: startAction
         text: root.running ? lang.t("pause") : lang.t("start")
@@ -204,35 +250,34 @@ PlasmoidItem {
     PlasmaCore.Action {
         id: resetAction
         text: lang.t("reset")
-        icon.name: "edit-reset"
+        icon.name: "chronometer-reset"
         onTriggered: root.reset()
     }
+    PlasmaCore.Action { id: sep1; isSeparator: true }
     PlasmaCore.Action {
-        id: separatorAction
-        isSeparator: true
-    }
-    PlasmaCore.Action {
-        id: separator2Action
-        isSeparator: true
-    }
-    PlasmaCore.Action {
-        id: setTimeAction
-        text: lang.t("setTime")
+        id: customAction
+        text: lang.t("customCountdown")
         icon.name: "document-edit"
-        // Always open the free-duration dialog at 00:00:00.
         onTriggered: setTimeWindow.openWith(0)
     }
+    PlasmaCore.Action { id: sep2; isSeparator: true }
+    PlasmaCore.Action {
+        id: stopwatchAction
+        text: lang.t("startStopwatch")
+        icon.name: "chronometer-start"
+        onTriggered: root.startStopwatch()
+    }
+    // Separates our entries from the ones Plasma appends ("Configure Big Timer…").
+    PlasmaCore.Action { id: sep3; isSeparator: true }
 
     property var presetActions: []
     Component {
         id: actionComponent
         PlasmaCore.Action { }
     }
-    function rebuildPresets() {
-        var old = root.presetActions
-        var arr = []
-        // presetDurations = JSON [{"s":seconds,"n":"name"}]; array order = menu order.
-        // Falls back to the old CSV-of-seconds format for existing configs.
+    // presetDurations = JSON [{"s":seconds,"n":"name"}]; array order = menu order.
+    // Falls back to the old CSV-of-seconds format.
+    function parsePresets() {
         var raw = String(Plasmoid.configuration.presetDurations).trim()
         var list = null
         try { list = JSON.parse(raw) } catch (e) { list = null }
@@ -244,29 +289,54 @@ PlasmoidItem {
                 if (v > 0) list.push({ "s": v, "n": "" })
             }
         }
+        return list
+    }
+    function rebuildPresets() {
+        var old = root.presetActions
+        var arr = []
+        var list = root.parsePresets()
         for (var i = 0; i < list.length; i++) {
             var s = parseInt(list[i].s) || 0
             if (s <= 0) continue
-            // "Set hh:mm:ss [name]" — fmt() already handles hours.
             var nm = list[i].n ? String(list[i].n) : ""
-            var label = lang.tr("set", root.fmt(s))
-            if (nm) label += " " + nm
+            // "Countdown 15 min [name]"
+            var label = lang.t("modeCountdown") + " " + root.fmtLong(s) + (nm ? " " + nm : "")
             var a = actionComponent.createObject(root, { text: label })
             a.triggered.connect((function (ss, nn) {
-                return function () { root.setSeconds(ss, nn) }
+                return function () { root.chooseDuration(ss, nn) }
             })(s, nm))
             arr.push(a)
         }
         root.presetActions = arr
         for (var j = 0; j < old.length; j++) old[j].destroy()
     }
-    Component.onCompleted: rebuildPresets()
+    readonly property var launchActions: root.presetActions
+        .concat([customAction, sep2, stopwatchAction])
 
-    Plasmoid.contextualActions: [startAction, resetAction, separatorAction]
-        .concat(root.presetActions)
-        .concat([separator2Action, setTimeAction])
+    Plasmoid.contextualActions: [startAction, resetAction, sep1]
+        .concat(root.launchActions)
+        .concat([sep3])
 
-    // Free-duration input window (right-click -> "Set a time…")
+    PlasmaExtras.Menu {
+        id: launchMenu
+        placement: PlasmaExtras.Menu.BottomPosedLeftAlignedPopup
+    }
+    Component {
+        id: menuItemComponent
+        PlasmaExtras.MenuItem { }
+    }
+    // Opens the launch menu under `item` (the clicked digits).
+    function openLaunchMenu(item) {
+        launchMenu.clearMenuItems()
+        for (var i = 0; i < root.launchActions.length; i++) {
+            launchMenu.addMenuItem(menuItemComponent.createObject(launchMenu,
+                                                                  { action: root.launchActions[i] }))
+        }
+        launchMenu.visualParent = item
+        launchMenu.openRelative()
+    }
+
+    // "Countdown… (other duration)" window
     Window {
         id: setTimeWindow
         width: Kirigami.Units.gridUnit * 18
@@ -312,7 +382,8 @@ PlasmoidItem {
                 QQC2.Button {
                     text: lang.t("ok")
                     onClicked: {
-                        root.setSeconds(inH.value * 3600 + inM.value * 60 + inS.value)
+                        var s = inH.value * 3600 + inM.value * 60 + inS.value
+                        if (s > 0) root.chooseDuration(s, "")
                         setTimeWindow.visible = false
                     }
                 }
@@ -320,113 +391,162 @@ PlasmoidItem {
         }
     }
 
-    // ----- Reusable buttons -----
-    // Sides: 0 = left, 1 = right, 2 = top, 3 = bottom (relative to the digits)
-    // Each button has an independent size (points; 0 = theme default) driving the icon
-    // and the text. The icon is scaled ~1.4x the point size so it matches the text.
-    Component {
-        id: startButton
-        PlasmaComponents.Button {
-            readonly property int sz: Plasmoid.configuration.startButtonSize
-            icon.name: root.running ? "media-playback-pause" : "media-playback-start"
-            icon.width: sz > 0 ? Math.round(sz * 1.4) : Kirigami.Units.iconSizes.smallMedium
-            icon.height: icon.width
-            font.pointSize: sz > 0 ? sz : Kirigami.Theme.defaultFont.pointSize
-            text: Plasmoid.configuration.showStartLabel
-                  ? (root.running ? lang.t("pause") : lang.t("start")) : ""
-            display: Plasmoid.configuration.showStartLabel
-                     ? QQC2.AbstractButton.TextBesideIcon : QQC2.AbstractButton.IconOnly
-            onClicked: root.toggle()
-            // Keep the button square when it shows no text.
-            Binding on implicitWidth {
-                when: !Plasmoid.configuration.showStartLabel
-                value: implicitHeight
-            }
+    // ===== Buttons =====
+    // One shared size (points, 0 = theme default) and one "show text" option.
+    // The icon is scaled ~1.4x the point size so it matches the text.
+    readonly property int btnSize: Plasmoid.configuration.buttonSize
+    readonly property bool btnText: Plasmoid.configuration.showButtonLabels
+    // +/- only change a countdown.
+    readonly property bool plusMinus: Plasmoid.configuration.showPlusMinus && !root.chrono
+
+    component TimerButton: PlasmaComponents.Button {
+        icon.width: root.btnSize > 0 ? Math.round(root.btnSize * 1.4)
+                                     : Kirigami.Units.iconSizes.smallMedium  // 22 px: Breeze draws these icons up to 24
+        icon.height: icon.width
+        font.pointSize: root.btnSize > 0 ? root.btnSize : Kirigami.Theme.defaultFont.pointSize
+        display: root.btnText ? QQC2.AbstractButton.TextBesideIcon : QQC2.AbstractButton.IconOnly
+        // Icon only: the text becomes a tooltip.
+        QQC2.ToolTip.text: text
+        QQC2.ToolTip.visible: hovered && !root.btnText
+        // Keep the button square when it shows no text.
+        Binding on implicitWidth {
+            when: !root.btnText
+            value: implicitHeight
         }
     }
-    Component {
-        id: resetButton
-        PlasmaComponents.Button {
-            readonly property int sz: Plasmoid.configuration.resetButtonSize
-            icon.name: "edit-reset"
-            icon.width: sz > 0 ? Math.round(sz * 1.4) : Kirigami.Units.iconSizes.smallMedium
-            icon.height: icon.width
-            font.pointSize: sz > 0 ? sz : Kirigami.Theme.defaultFont.pointSize
-            text: Plasmoid.configuration.showResetLabel ? lang.t("reset") : ""
-            display: Plasmoid.configuration.showResetLabel
-                     ? QQC2.AbstractButton.TextBesideIcon : QQC2.AbstractButton.IconOnly
-            onClicked: root.reset()
-            Binding on implicitWidth {
-                when: !Plasmoid.configuration.showResetLabel
-                value: implicitHeight
-            }
+    component StartButton: TimerButton {
+        icon.name: root.running ? "media-playback-pause" : "media-playback-start"
+        text: root.running ? lang.t("pause") : lang.t("start")
+        onClicked: root.toggle()
+    }
+    component ResetButton: TimerButton {
+        icon.name: "chronometer-reset"
+        text: lang.t("reset")
+        onClicked: root.reset()
+    }
+    // +/- : plain "+"/"−" text (theme-neutral), with the step as suffix when texts are shown.
+    component StepButton: PlasmaComponents.Button {
+        property int sign: 1
+        visible: root.plusMinus
+        display: QQC2.AbstractButton.TextOnly
+        font.pointSize: root.btnSize > 0 ? root.btnSize : Kirigami.Theme.defaultFont.pointSize
+        text: (sign > 0 ? "+" : "−")
+              + (root.btnText ? root.fmtLong(Plasmoid.configuration.quickStepSeconds) : "")
+        onClicked: root.addSeconds(sign * Plasmoid.configuration.quickStepSeconds)
+        Binding on implicitWidth {
+            when: !root.btnText
+            value: implicitHeight
         }
     }
-    // +/- buttons: plain "+"/"−" text (theme-neutral, no red cross icon), with an
-    // optional duration suffix. The step (seconds) is shared and configurable.
-    Component {
-        id: addButton
-        PlasmaComponents.Button {
-            readonly property int sz: Plasmoid.configuration.addButtonSize
-            display: QQC2.AbstractButton.TextOnly
-            font.pointSize: sz > 0 ? sz : Kirigami.Theme.defaultFont.pointSize
-            text: Plasmoid.configuration.showAddLabel
-                  ? "+" + root.fmtStep(Plasmoid.configuration.quickStepSeconds) : "+"
-            onClicked: root.addSeconds(Plasmoid.configuration.quickStepSeconds)
-            Binding on implicitWidth {
-                when: !Plasmoid.configuration.showAddLabel
-                value: implicitHeight
-            }
+
+    // ===== Views =====
+    // The digits. Clicking them while stopped opens the launch menu.
+    component Digits: QQC2.Label {
+        id: digits
+        text: root.fmt(root.shown)
+        font.family: root.digitsFamily
+        color: root.digitsColor
+        MouseArea {
+            anchors.fill: parent
+            enabled: !root.running
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: root.openLaunchMenu(digits)
         }
     }
-    Component {
-        id: subButton
-        PlasmaComponents.Button {
-            readonly property int sz: Plasmoid.configuration.subButtonSize
-            display: QQC2.AbstractButton.TextOnly
-            font.pointSize: sz > 0 ? sz : Kirigami.Theme.defaultFont.pointSize
-            text: Plasmoid.configuration.showSubLabel
-                  ? "−" + root.fmtStep(Plasmoid.configuration.quickStepSeconds) : "−"
-            onClicked: root.addSeconds(-Plasmoid.configuration.quickStepSeconds)
-            Binding on implicitWidth {
-                when: !Plasmoid.configuration.showSubLabel
-                value: implicitHeight
+
+    // Button layout: 0 = Reset left / Start right of the digits, 1 = below, 2 = above,
+    // 3 = no buttons.
+    readonly property int btnLayout: Plasmoid.configuration.buttonLayout
+
+    component ButtonRow: RowLayout {
+        spacing: Kirigami.Units.largeSpacing
+        ResetButton { }
+        StepButton { sign: -1 }
+        StepButton { sign: 1 }
+        StartButton { }
+    }
+
+    // Full view (desktop, and the popup opened from a panel).
+    component TimerView: Item {
+        implicitWidth: tvStack.implicitWidth + Kirigami.Units.largeSpacing * 2
+        implicitHeight: tvStack.implicitHeight + Kirigami.Units.largeSpacing * 2
+
+        ColumnLayout {
+            id: tvStack
+            anchors.centerIn: parent
+            spacing: Kirigami.Units.smallSpacing
+
+            ButtonRow {
+                Layout.alignment: Qt.AlignHCenter
+                visible: root.btnLayout === 2
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Kirigami.Units.largeSpacing
+
+                RowLayout {
+                    visible: root.btnLayout === 0
+                    spacing: Kirigami.Units.largeSpacing
+                    ResetButton { }
+                    StepButton { sign: -1 }
+                }
+                Digits {
+                    Layout.alignment: Qt.AlignVCenter
+                    font.pointSize: Plasmoid.configuration.fontSize
+                }
+                RowLayout {
+                    visible: root.btnLayout === 0
+                    spacing: Kirigami.Units.largeSpacing
+                    StepButton { sign: 1 }
+                    StartButton { }
+                }
+            }
+
+            ButtonRow {
+                Layout.alignment: Qt.AlignHCenter
+                visible: root.btnLayout === 1
             }
         }
     }
 
-    // Display mode: 0 = normal (always the digits), 1 = compact (logo only),
-    // 2 = compact with click-to-switch to the normal view. Modes 1 and 2 use the compact
-    // representation (logo/ring); only mode 2 reacts to a click (see compactRoot).
-    preferredRepresentation: Plasmoid.configuration.displayMode === 0
-        ? fullRepresentation : compactRepresentation
+    // Plasma picks the representation: full view on the desktop, compact one in a panel.
+    readonly property bool inPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
+                                    || Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    preferredRepresentation: root.inPanel ? compactRepresentation : fullRepresentation
 
-    // By default Plasma caps a compact applet to the standard panel icon size, leaving a
-    // big margin in a thick panel. CanFillArea lets the ring fill the whole thickness.
-    // (The enum lives on Plasma::Applet, i.e. the Plasmoid attached object.)
-    Plasmoid.constraintHints: Plasmoid.configuration.displayMode !== 0
-        ? Plasmoid.CanFillArea : Plasmoid.NoHint
+    fullRepresentation: TimerView {
+        // Without preferred/maximum sizes, the panel popup falls back to a default size
+        // larger than the content.
+        Layout.minimumWidth: implicitWidth
+        Layout.minimumHeight: implicitHeight
+        Layout.preferredWidth: implicitWidth
+        Layout.preferredHeight: implicitHeight
+        Layout.maximumWidth: implicitWidth
+        Layout.maximumHeight: implicitHeight
+    }
 
-    // Tooltip on the compact ring: remaining time
-    toolTipSubText: root.fmt(root.remaining)
+    // Let the compact view use the panel's whole thickness instead of the standard icon
+    // size. (The enum lives on Plasma::Applet, i.e. the Plasmoid attached object.)
+    Plasmoid.constraintHints: Plasmoid.CanFillArea
 
-    // Logo: a theme icon (drawn square by Kirigami.Icon) or a custom image. For custom
-    // images we use Image with PreserveAspectFit so a rectangular logo keeps its ratio and
-    // fills the available box (Kirigami.Icon would force it into a square).
+    toolTipMainText: root.chrono ? lang.t("modeStopwatch") : lang.t("modeCountdown")
+    toolTipSubText: root.fmt(root.shown)
+
+    // Logo: a theme icon (drawn square by Kirigami.Icon) or a custom image (PreserveAspectFit,
+    // so a rectangular logo keeps its ratio).
     component CompactLogo: Item {
         readonly property bool custom: Plasmoid.configuration.compactIconPath !== ""
-        readonly property string src: custom
-            ? Plasmoid.configuration.compactIconPath : "chronometer"
         Kirigami.Icon {
             anchors.fill: parent
             visible: !parent.custom
-            source: parent.custom ? "" : parent.src
+            source: parent.custom ? "" : "chronometer"
             roundToIconSize: false
         }
         Image {
             anchors.fill: parent
             visible: parent.custom
-            source: parent.custom ? parent.src : ""
+            source: parent.custom ? Plasmoid.configuration.compactIconPath : ""
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
@@ -434,27 +554,48 @@ PlasmoidItem {
         }
     }
 
-    // Compact panel representation: a logo (chronometer icon or a custom image) with the
-    // progress shown either as a ring around it or as a bar below it.
+    // Panel: the time (default) or the icon with a progress ring/bar. A click opens the
+    // full view in the standard Plasma popup.
     compactRepresentation: MouseArea {
         id: compactRoot
-        // Display modes: 1 = logo + ring/bar progress; 2 = logo only, click switches to
-        // the normal view (digits + buttons) inline.
-        readonly property int mode: Plasmoid.configuration.displayMode
-        // Mode 2 only: the inline normal view is shown after a click.
-        readonly property bool showTimer: compactRoot.mode === 2 && root.switched
-        // The countdown is "active" once started (running, paused mid-way, or finished).
-        readonly property bool active: root.running
-                                       || (root.target > 0 && root.remaining < root.target)
-        // While showing the logo (mode 1, or mode 2 collapsed): just the big logo when
-        // idle, ring/bar progress once the countdown is active.
-        readonly property bool bigLogo: !compactRoot.showTimer && !compactRoot.active
-
         readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+        // panelDisplay: 0 = time, 1 = icon while idle, then the time once started (running
+        // or paused, until reset), 2 = icon with progress.
+        readonly property int display: Plasmoid.configuration.panelDisplay
+        readonly property bool iconMode: compactRoot.display === 2
+                                         || (compactRoot.display === 1 && !root.active)
 
-        // A custom rectangular logo would be letterboxed in a square applet. Read its
-        // natural ratio and let the applet follow it -- except for the ring, which needs a
-        // square. Capped so a very wide logo does not make a huge applet.
+        onClicked: root.expanded = !root.expanded
+
+        // --- Time mode: digits sized to the panel thickness ---
+        QQC2.Label {
+            id: panelDigits
+            anchors.centerIn: parent
+            visible: !compactRoot.iconMode
+            text: root.fmt(root.shown)
+            font.family: root.digitsFamily
+            color: root.digitsColor
+            // Horizontal panel: 60 % of its height (the applet widens to fit the text).
+            // Vertical panel: the largest size at which the actual text fits the width, so
+            // "01:02:03" (stopwatch past an hour) does not overflow, capped at the horizontal rule.
+            font.pixelSize: Math.max(6, compactRoot.vertical
+                ? Math.min(Math.round(compactRoot.width * 0.6),
+                           digitsMetrics.advanceWidth > 0
+                           ? Math.floor((compactRoot.width - Kirigami.Units.smallSpacing * 2)
+                                        * 100 / digitsMetrics.advanceWidth)
+                           : Math.round(compactRoot.width / 3.2))
+                : Math.round(compactRoot.height * 0.6))
+        }
+        // Width of the current text at 100 px, to scale it to a vertical panel's width.
+        TextMetrics {
+            id: digitsMetrics
+            font.family: root.digitsFamily
+            font.pixelSize: 100
+            text: panelDigits.text
+        }
+
+        // --- Icon mode: a custom rectangular logo sets the applet ratio (except the ring,
+        // which needs a square). Capped so a very wide logo does not make a huge applet.
         readonly property bool customLogo: Plasmoid.configuration.compactIconPath !== ""
         Image {
             id: logoProbe
@@ -465,72 +606,58 @@ PlasmoidItem {
         readonly property real logoAspect: (customLogo && logoProbe.sourceSize.height > 0)
             ? Math.max(0.25, Math.min(4, logoProbe.sourceSize.width / logoProbe.sourceSize.height))
             : 1
-        // Ring (active && !bar) stays square; bar style and the lone logo follow the ratio.
-        readonly property real boxAspect: (customLogo && !(active && !barMode)) ? logoAspect : 1
+        readonly property bool barMode: Plasmoid.configuration.compactBar
+        readonly property real boxAspect: (customLogo && !(root.active && !barMode)) ? logoAspect : 1
 
-        // When showing the inline timer, size to its content (driven by the font size, so
-        // the digits can grow past the panel thickness); otherwise size the applet to the
-        // logo ratio against the panel thickness (square for the ring).
-        Layout.minimumWidth: showTimer ? tv.implicitWidth
+        Layout.minimumWidth: !iconMode
+            ? (vertical ? Kirigami.Units.iconSizes.small
+                        : panelDigits.implicitWidth + Kirigami.Units.smallSpacing * 2)
             : (vertical ? Kirigami.Units.iconSizes.small : Math.round(compactRoot.height * boxAspect))
-        Layout.maximumWidth: showTimer ? tv.implicitWidth
+        Layout.maximumWidth: !iconMode
+            ? (vertical ? Infinity : Layout.minimumWidth)
             : (vertical ? Infinity : Math.round(compactRoot.height * boxAspect))
-        Layout.minimumHeight: showTimer ? tv.implicitHeight
+        Layout.minimumHeight: !iconMode
+            ? (vertical ? panelDigits.implicitHeight + Kirigami.Units.smallSpacing * 2
+                        : Kirigami.Units.iconSizes.small)
             : (vertical ? Math.round(compactRoot.width / boxAspect) : Kirigami.Units.iconSizes.small)
-        Layout.maximumHeight: showTimer ? tv.implicitHeight
+        Layout.maximumHeight: !iconMode
+            ? (vertical ? Layout.minimumHeight : Infinity)
             : (vertical ? Math.round(compactRoot.width / boxAspect) : Infinity)
-
-        // Mode 2: toggle the inline normal view. Mode 1: static, no click.
-        onClicked: if (compactRoot.mode === 2) root.switched = !root.switched
 
         // Largest square that fits the applet, used to size the ring and the logo.
         readonly property int face: Math.min(width, height)
-        readonly property bool barMode: Plasmoid.configuration.compactBar
+        // Lone logo while nothing is going on, progress once active.
+        readonly property bool bigLogo: !root.active
 
-        // Inline normal view (mode 2, switched): digits + buttons, at the configured font
-        // size (may extend past a thin panel).
-        TimerView {
-            id: tv
-            anchors.centerIn: parent
-            visible: compactRoot.showTimer
-        }
-
-        // Progress shared by both styles. "Empty" mode (default) shows the time left
-        // (full at start -> empties); "Fill" mode shows the time elapsed (empty at start).
+        // Countdown: time left (empties) or elapsed (fills). Stopwatch: no target, so the
+        // ring/bar works like a second hand, one full turn per minute.
         readonly property real progress: root.target > 0
             ? Math.max(0, Math.min(1, root.remaining / root.target)) : 0
-        readonly property real fraction: Plasmoid.configuration.compactRingFill
-            ? (1 - progress) : progress
+        readonly property real sweep: root.elapsed > 0 && root.elapsed % 60 === 0
+            ? 1 : (root.elapsed % 60) / 60
+        readonly property real fraction: root.chrono
+            ? sweep
+            : (Plasmoid.configuration.compactRingFill ? (1 - progress) : progress)
         readonly property color trackColor: Kirigami.Theme.textColor
-        readonly property color arcColor: root.remaining <= 0
-            ? Kirigami.Theme.negativeTextColor
-            : root.warnActive
-                ? (Plasmoid.configuration.warnColor !== ""
-                   ? Plasmoid.configuration.warnColor
-                   : Kirigami.Theme.negativeTextColor)
-                : Kirigami.Theme.highlightColor
+        readonly property color arcColor: root.chrono
+            ? Kirigami.Theme.highlightColor
+            : (root.remaining <= 0 || root.warnActive) ? root.digitsColor
+                                                       : Kirigami.Theme.highlightColor
 
-        // The logo source: a custom image if set, otherwise the chronometer icon.
-        readonly property string logoSource: Plasmoid.configuration.compactIconPath !== ""
-            ? Plasmoid.configuration.compactIconPath : "chronometer"
-
-        // ----- RING STYLE: ring drawn around a centered logo -----
+        // Ring style
         Canvas {
             id: ring
             anchors.fill: parent
-            visible: !compactRoot.showTimer && compactRoot.active && !compactRoot.barMode
+            visible: compactRoot.iconMode && root.active && !compactRoot.barMode
             onVisibleChanged: if (visible) requestPaint()
-
             Component.onCompleted: requestPaint()
             Connections {
                 target: compactRoot
                 function onFractionChanged() { ring.requestPaint() }
                 function onArcColorChanged() { ring.requestPaint() }
-                function onActiveChanged() { ring.requestPaint() }
             }
             Connections {
                 target: Plasmoid.configuration
-                function onCompactRingMarginChanged() { ring.requestPaint() }
                 function onCompactRingThicknessChanged() { ring.requestPaint() }
             }
             onWidthChanged: requestPaint()
@@ -539,20 +666,17 @@ PlasmoidItem {
             onPaint: {
                 var ctx = getContext("2d")
                 ctx.reset()
-                // Inset the ring from the panel edges (configurable margin), then draw the
-                // stroke with the configured thickness as a % of the remaining diameter.
-                var margin = Math.round(Math.min(width, height)
-                                        * Plasmoid.configuration.compactRingMargin / 100)
+                // Inset from the panel edges, then a stroke whose thickness is a % of the
+                // remaining diameter.
+                var margin = Math.round(Math.min(width, height) * 0.07)
                 var size = Math.min(width, height) - margin * 2
                 if (size <= 0) return
                 var lineW = Math.max(2, Math.round(size * Plasmoid.configuration.compactRingThickness / 100))
-                // Centered on the whole canvas; outer edge of the stroke on the square edge.
                 var cx = width / 2
                 var cy = height / 2
                 var r = size / 2 - lineW / 2
                 if (r <= 0) return
 
-                // Track (full circle, faint)
                 ctx.beginPath()
                 ctx.lineWidth = lineW
                 ctx.strokeStyle = compactRoot.trackColor
@@ -560,7 +684,6 @@ PlasmoidItem {
                 ctx.arc(cx, cy, r, 0, 2 * Math.PI)
                 ctx.stroke()
 
-                // Progress arc, clockwise from 12 o'clock
                 ctx.globalAlpha = 1.0
                 ctx.beginPath()
                 ctx.lineWidth = lineW
@@ -574,25 +697,20 @@ PlasmoidItem {
 
         CompactLogo {
             anchors.centerIn: parent
-            // Shown as the lone (big) logo when idle, or centered in the active ring.
-            visible: !compactRoot.showTimer
+            visible: compactRoot.iconMode
                      && (compactRoot.bigLogo
-                         || (compactRoot.active && !compactRoot.barMode
-                             && Plasmoid.configuration.compactIconScale > 0))
-            // Lone logo fills the (ratio-correct) applet; ring-centered logo stays square.
+                         || (!compactRoot.barMode && Plasmoid.configuration.compactIconScale > 0))
             width: compactRoot.bigLogo
                    ? Math.round(compactRoot.width * 0.9)
                    : Math.round(compactRoot.face * Plasmoid.configuration.compactIconScale / 100)
-            height: compactRoot.bigLogo
-                    ? Math.round(compactRoot.height * 0.9)
-                    : width
+            height: compactRoot.bigLogo ? Math.round(compactRoot.height * 0.9) : width
         }
 
-        // ----- BAR STYLE: logo on top, progress bar below -----
+        // Bar style: logo on top, progress bar below
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: Math.round(compactRoot.face * 0.08)
-            visible: !compactRoot.showTimer && compactRoot.active && compactRoot.barMode
+            visible: compactRoot.iconMode && root.active && compactRoot.barMode
             spacing: Kirigami.Units.smallSpacing
 
             CompactLogo {
@@ -602,8 +720,6 @@ PlasmoidItem {
                 Layout.maximumHeight: compactRoot.face * Plasmoid.configuration.compactIconScale / 100
                 visible: Plasmoid.configuration.compactIconScale > 0
             }
-
-            // Progress bar (faint track + colored fill)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignBottom
@@ -612,7 +728,6 @@ PlasmoidItem {
                 radius: height / 2
                 color: Qt.rgba(compactRoot.trackColor.r, compactRoot.trackColor.g,
                                compactRoot.trackColor.b, 0.25)
-
                 Rectangle {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
@@ -623,122 +738,5 @@ PlasmoidItem {
                 }
             }
         }
-    }
-
-    // Buttons indexed 0..3; sideList() returns the indices for one side, sorted by the
-    // per-button "order" so the user controls the sequence within a side.
-    readonly property var orderedComps: [startButton, resetButton, subButton, addButton]
-    function sideList(side) {
-        var defs = [
-            { i: 0, show: Plasmoid.configuration.showStartButton, side: root.startSide,
-              order: Plasmoid.configuration.startButtonOrder },
-            { i: 1, show: Plasmoid.configuration.showResetButton, side: root.resetSide,
-              order: Plasmoid.configuration.resetButtonOrder },
-            { i: 2, show: Plasmoid.configuration.showSubButton, side: root.subSide,
-              order: Plasmoid.configuration.subButtonOrder },
-            { i: 3, show: Plasmoid.configuration.showAddButton, side: root.addSide,
-              order: Plasmoid.configuration.addButtonOrder }
-        ]
-        return defs.filter(function (d) { return d.show && d.side === side })
-                   .sort(function (a, b) { return a.order - b.order })
-                   .map(function (d) { return d.i })
-    }
-    readonly property var btnsLeft: root.sideList(0)
-    readonly property var btnsRight: root.sideList(1)
-    readonly property var btnsTop: root.sideList(2)
-    readonly property var btnsBottom: root.sideList(3)
-
-    // One side's buttons: a horizontal row, or a vertical stack (1 column) when not.
-    component SideButtons: GridLayout {
-        id: sb
-        property var items: []
-        property bool horizontal: true
-        visible: items.length > 0
-        columns: horizontal ? 99 : 1
-        rowSpacing: Kirigami.Units.smallSpacing
-        columnSpacing: Kirigami.Units.largeSpacing
-        Repeater {
-            model: sb.items
-            Loader {
-                Layout.alignment: Qt.AlignCenter
-                sourceComponent: root.orderedComps[modelData]
-            }
-        }
-    }
-
-    // The normal timer view (digits + buttons). Reused by the full representation and by
-    // the inline switch of compact mode 2.
-    component TimerView: Item {
-        id: timerView
-        // Digit size in points. Defaults to the configured font size (full view / desktop);
-        // the inline panel view overrides it with a fixed value so the auto-scaling does not
-        // shrink the buttons when the font size changes.
-        property int digitsSize: Plasmoid.configuration.fontSize
-        implicitWidth: tvStack.implicitWidth + Kirigami.Units.largeSpacing * 2
-        implicitHeight: tvStack.implicitHeight + Kirigami.Units.largeSpacing * 2
-
-        // Top / (left - digits - right) / bottom
-        ColumnLayout {
-            id: tvStack
-            anchors.centerIn: parent
-            spacing: Kirigami.Units.smallSpacing
-
-            // --- TOP ---
-            SideButtons {
-                Layout.alignment: Qt.AlignHCenter
-                items: root.btnsTop
-                horizontal: true
-            }
-
-            // --- MIDDLE: left | digits | right ---
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Kirigami.Units.largeSpacing
-
-                SideButtons {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.fillHeight: false
-                    items: root.btnsLeft
-                    horizontal: Plasmoid.configuration.lateralButtonsRow
-                }
-
-                QQC2.Label {
-                    Layout.alignment: Qt.AlignVCenter
-                    text: root.fmt(root.remaining)
-                    font.pointSize: timerView.digitsSize
-                    font.family: Plasmoid.configuration.fontFamily !== ""
-                                 ? Plasmoid.configuration.fontFamily
-                                 : Kirigami.Theme.defaultFont.family
-                    color: root.remaining <= 0
-                           ? Kirigami.Theme.negativeTextColor
-                           : root.warnActive
-                             ? (Plasmoid.configuration.warnColor !== ""
-                                ? Plasmoid.configuration.warnColor
-                                : Kirigami.Theme.negativeTextColor)
-                             : (Plasmoid.configuration.fontColor !== ""
-                                ? Plasmoid.configuration.fontColor
-                                : Kirigami.Theme.textColor)
-                }
-
-                SideButtons {
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.fillHeight: false
-                    items: root.btnsRight
-                    horizontal: Plasmoid.configuration.lateralButtonsRow
-                }
-            }
-
-            // --- BOTTOM ---
-            SideButtons {
-                Layout.alignment: Qt.AlignHCenter
-                items: root.btnsBottom
-                horizontal: true
-            }
-        }
-    }
-
-    fullRepresentation: TimerView {
-        Layout.minimumWidth: implicitWidth
-        Layout.minimumHeight: implicitHeight
     }
 }

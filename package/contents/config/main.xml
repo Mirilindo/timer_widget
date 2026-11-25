@@ -5,8 +5,10 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
   <kcfgfile name=""/>
   <group name="General">
+
+    <!-- ===== Appearance ===== -->
     <entry name="fontSize" type="Int">
-      <label>Digits font size</label>
+      <label>Digits font size (desktop and popup)</label>
       <default>32</default>
     </entry>
     <!-- Empty = system default font family -->
@@ -19,12 +21,7 @@
       <label>Digits color (empty = theme color)</label>
       <default></default>
     </entry>
-    <entry name="defaultDuration" type="Int">
-      <label>Default duration, in seconds</label>
-      <default>900</default>
-    </entry>
-
-    <!-- Warning color: digits switch to warnColor when remaining <= warnPercent % of the target -->
+    <!-- Countdown: digits switch to warnColor when remaining <= warnPercent % of the target -->
     <entry name="warnEnabled" type="Bool">
       <label>Change the digits color near the end</label>
       <default>true</default>
@@ -38,178 +35,92 @@
       <default>#e74c3c</default>
     </entry>
 
-    <!-- Display mode:
-         0 = Normal: the digits (countdown) are always shown.
-         1 = Compact: only the logo/ring, no countdown; clicking does nothing.
-         2 = Compact + switch: only the logo/ring; a click opens the normal view (digits),
-             another click goes back to the logo. -->
-    <entry name="displayMode" type="Int">
-      <label>Display mode (0=normal, 1=compact, 2=compact+switch)</label>
-      <default>2</default>
+    <!-- ===== Panel ===== -->
+    <!-- What a panel shows: 0 = the time (digits sized to the panel),
+         1 = the icon while idle, then the time once started (until reset),
+         2 = the icon with a progress ring/bar -->
+    <entry name="panelDisplay" type="Int">
+      <label>In a panel, show (0=time, 1=icon then time, 2=icon with progress)</label>
+      <default>0</default>
     </entry>
-    <!-- Compact ring direction: false = empties as the countdown runs (full at start),
-         true = fills up as time elapses (empty at start). -->
-    <entry name="compactRingFill" type="Bool">
-      <label>Fill the compact ring as time elapses (instead of emptying)</label>
-      <default>false</default>
-    </entry>
-    <!-- Size of the chronometer icon inside the ring, as a % of the panel thickness.
-         0 = no icon (ring only). -->
-    <entry name="compactIconScale" type="Int">
-      <label>Compact icon size (% of the panel thickness)</label>
-      <default>70</default>
-    </entry>
-    <!-- Margin around the ring, as a % of the panel thickness (inset from the edges). -->
-    <entry name="compactRingMargin" type="Int">
-      <label>Compact ring margin (% of the panel thickness)</label>
-      <default>7</default>
-    </entry>
-    <!-- Ring/bar thickness, as a % of the ring diameter. -->
-    <entry name="compactRingThickness" type="Int">
-      <label>Compact ring/bar thickness (% of the diameter)</label>
-      <default>14</default>
-    </entry>
-    <!-- Compact progress style: false = ring around the logo, true = bar below the logo. -->
     <entry name="compactBar" type="Bool">
-      <label>Show a progress bar below the logo instead of a ring around it</label>
+      <label>Icon mode: progress bar below the icon instead of a ring around it</label>
       <default>true</default>
     </entry>
-    <!-- Custom logo image (file URL) for the compact representation. Empty = chronometer.
-         For the ring style, a square image works best. -->
+    <entry name="compactIconScale" type="Int">
+      <label>Icon mode: icon size (% of the panel thickness)</label>
+      <default>70</default>
+    </entry>
+    <entry name="compactRingThickness" type="Int">
+      <label>Icon mode: ring/bar thickness (%)</label>
+      <default>14</default>
+    </entry>
+    <!-- Countdown only: false = empties as time runs out, true = fills up -->
+    <entry name="compactRingFill" type="Bool">
+      <label>Icon mode: fill the ring as time elapses (instead of emptying)</label>
+      <default>false</default>
+    </entry>
     <entry name="compactIconPath" type="String">
-      <label>Custom logo image (empty = default chronometer icon)</label>
+      <label>Icon mode: custom image (empty = chronometer icon)</label>
       <default></default>
     </entry>
 
-    <entry name="showStartButton" type="Bool">
-      <label>Show the Start/Pause button</label>
-      <default>true</default>
+    <!-- ===== Buttons ===== -->
+    <!-- 0 = Reset left / Start right of the digits, 1 = below, 2 = above, 3 = no buttons -->
+    <entry name="buttonLayout" type="Int">
+      <label>Buttons layout</label>
+      <default>0</default>
     </entry>
-    <entry name="showResetButton" type="Bool">
-      <label>Show the Reset button</label>
-      <default>true</default>
-    </entry>
-    <!-- When true, clicking Reset again (once already at the targeted duration and stopped)
-         goes back to the default duration. When false, Reset only ever reloads the target. -->
-    <entry name="resetTwiceToDefault" type="Bool">
-      <label>Second Reset click goes back to the default duration</label>
-      <default>true</default>
-    </entry>
-    <!-- Lay out the left/right side buttons in a horizontal row instead of stacking them. -->
-    <entry name="lateralButtonsRow" type="Bool">
-      <label>Lay out the left/right buttons in a row (instead of stacked)</label>
+    <entry name="showButtonLabels" type="Bool">
+      <label>Show the text on the buttons</label>
       <default>false</default>
     </entry>
-
-    <!-- Quick +/- time buttons (hidden by default; enable in the Buttons page).
-         Each button is configured independently (side, label, size); they share the step. -->
-    <entry name="showAddButton" type="Bool">
-      <label>Show the + (add time) button</label>
+    <entry name="buttonSize" type="Int">
+      <label>Buttons size (points, 0 = auto)</label>
+      <default>0</default>
+    </entry>
+    <entry name="showPlusMinus" type="Bool">
+      <label>Show +/- buttons (countdown)</label>
       <default>false</default>
     </entry>
-    <entry name="showSubButton" type="Bool">
-      <label>Show the - (remove time) button</label>
-      <default>false</default>
-    </entry>
-    <!-- 0 = left, 1 = right, 2 = top, 3 = bottom (relative to the digits) -->
-    <entry name="addButtonSide" type="Int">
-      <label>+ button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>2</default>
-    </entry>
-    <entry name="subButtonSide" type="Int">
-      <label>- button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>3</default>
-    </entry>
-    <entry name="showAddLabel" type="Bool">
-      <label>Show the duration on the + button</label>
-      <default>false</default>
-    </entry>
-    <entry name="showSubLabel" type="Bool">
-      <label>Show the duration on the - button</label>
-      <default>false</default>
-    </entry>
-    <!-- Seconds added/removed per click by the +/- buttons (shared) -->
     <entry name="quickStepSeconds" type="Int">
-      <label>Step in seconds for the +/- buttons</label>
+      <label>Step of the +/- buttons, in seconds</label>
       <default>60</default>
     </entry>
-    <!-- 0 = left, 1 = right, 2 = top, 3 = bottom (relative to the digits) -->
-    <!-- Defaults: Reset on the left, Start on the right -->
-    <entry name="startButtonSide" type="Int">
-      <label>Start button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>1</default>
-    </entry>
-    <entry name="resetButtonSide" type="Int">
-      <label>Reset button side (0=left, 1=right, 2=top, 3=bottom)</label>
-      <default>0</default>
-    </entry>
-    <!-- Show the text label on the buttons (false = icon only) -->
-    <entry name="showStartLabel" type="Bool">
-      <label>Show the text label on the Start/Pause button</label>
-      <default>true</default>
-    </entry>
-    <entry name="showResetLabel" type="Bool">
-      <label>Show the text label on the Reset button</label>
-      <default>true</default>
-    </entry>
 
-    <!-- Per-button content size in points (icon + text). 0 = automatic (theme default). -->
-    <entry name="startButtonSize" type="Int">
-      <label>Start/Pause button size (points, 0 = auto)</label>
-      <default>0</default>
-    </entry>
-    <entry name="resetButtonSize" type="Int">
-      <label>Reset button size (points, 0 = auto)</label>
-      <default>0</default>
-    </entry>
-    <entry name="addButtonSize" type="Int">
-      <label>+ button size (points, 0 = auto)</label>
-      <default>0</default>
-    </entry>
-    <entry name="subButtonSize" type="Int">
-      <label>- button size (points, 0 = auto)</label>
-      <default>0</default>
-    </entry>
-
-    <!-- Order within a side (ascending). Lets the user sequence buttons sharing a side. -->
-    <entry name="startButtonOrder" type="Int">
-      <label>Start/Pause button order</label>
-      <default>0</default>
-    </entry>
-    <entry name="resetButtonOrder" type="Int">
-      <label>Reset button order</label>
-      <default>1</default>
-    </entry>
-    <entry name="addButtonOrder" type="Int">
-      <label>+ button order</label>
-      <default>2</default>
-    </entry>
-    <entry name="subButtonOrder" type="Int">
-      <label>- button order</label>
-      <default>3</default>
-    </entry>
-
-    <!-- Right-click menu durations, JSON array: [{"s": seconds, "n": "optional name"}, ...]
-         Order in the array = order in the menu. -->
+    <!-- ===== Countdowns (right-click / launch menu) ===== -->
     <entry name="presetDurations" type="String">
-      <label>Preset menu durations (JSON: [{"s":seconds,"n":"name"}])</label>
+      <label>Countdown durations (JSON: [{"s":seconds,"n":"name"}])</label>
       <default>[{"s":300,"n":""},{"s":600,"n":""},{"s":900,"n":""},{"s":1800,"n":""},{"s":2700,"n":""},{"s":3600,"n":""}]</default>
     </entry>
 
-    <!-- Number of times the beep plays when reaching zero. 0 = no sound. -->
+    <!-- ===== End of countdown ===== -->
     <entry name="beepCount" type="Int">
-      <label>Beep repeats at end (0 = no sound)</label>
+      <label>Beep repeats at the end (0 = no sound)</label>
       <default>3</default>
     </entry>
-    <!-- Custom end sound (file URL). Empty = use the bundled beep. -->
     <entry name="customSoundPath" type="String">
       <label>Custom end sound file (empty = bundled beep)</label>
       <default></default>
     </entry>
-    <!-- Show a desktop notification when the countdown reaches zero. -->
     <entry name="showNotification" type="Bool">
       <label>Show a notification at the end</label>
       <default>true</default>
+    </entry>
+
+    <!-- ===== Remembered state (not shown in the settings) ===== -->
+    <!-- 0 = countdown, 1 = stopwatch; set from the menu -->
+    <entry name="timerMode" type="Int">
+      <label>Current mode (0=countdown, 1=stopwatch)</label>
+      <default>0</default>
+    </entry>
+    <entry name="lastDuration" type="Int">
+      <label>Last picked countdown duration, in seconds</label>
+      <default>900</default>
+    </entry>
+    <entry name="lastDurationName" type="String">
+      <label>Name of the last picked duration</label>
+      <default></default>
     </entry>
   </group>
 </kcfg>

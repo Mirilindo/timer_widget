@@ -9,7 +9,6 @@ KCM.SimpleKCM {
 
     // JSON: [{"s": seconds, "n": "name"}, ...]. Source of truth = the config.
     property string cfg_presetDurations
-    property int cfg_defaultDuration
 
     Translations { id: lang }
 
@@ -80,41 +79,12 @@ KCM.SimpleKCM {
         page.entries = copy
         persist()
     }
-    function applyDefault() {
-        page.cfg_defaultDuration = defH.value * 3600 + defM.value * 60 + defS.value
-    }
-
     Component.onCompleted: load()
 
     ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
-        // --- Default duration (at start / on double Reset) ---
-        Kirigami.Heading { level: 3; text: lang.t("defaultDuration") }
-        RowLayout {
-            spacing: Kirigami.Units.smallSpacing
-            QQC2.SpinBox {
-                id: defH; from: 0; to: 99
-                Component.onCompleted: value = Math.floor(page.cfg_defaultDuration / 3600)
-                onValueModified: page.applyDefault()
-            }
-            QQC2.Label { text: ":" }
-            QQC2.SpinBox {
-                id: defM; from: 0; to: 59
-                Component.onCompleted: value = Math.floor((page.cfg_defaultDuration % 3600) / 60)
-                onValueModified: page.applyDefault()
-            }
-            QQC2.Label { text: ":" }
-            QQC2.SpinBox {
-                id: defS; from: 0; to: 59
-                Component.onCompleted: value = page.cfg_defaultDuration % 60
-                onValueModified: page.applyDefault()
-            }
-        }
-
-        Kirigami.Separator { Layout.fillWidth: true }
-
-        // --- Right-click menu durations ---
+        // --- Countdowns offered in the menus ---
         Kirigami.Heading { level: 3; text: lang.t("menuDurationsTitle") }
         QQC2.Label {
             Layout.maximumWidth: Kirigami.Units.gridUnit * 26

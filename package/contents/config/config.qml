@@ -9,17 +9,22 @@ ConfigModel {
         source: "configAppearance.qml"
     }
     ConfigCategory {
+        name: "Panel"
+        icon: "view-split-left-right"
+        source: "configPanel.qml"
+    }
+    ConfigCategory {
         name: "Buttons"
         icon: "configure"
         source: "configButtons.qml"
     }
     ConfigCategory {
-        name: "Menu durations"
+        name: "Countdowns"
         icon: "chronometer"
         source: "configDurations.qml"
     }
     ConfigCategory {
-        name: "Sound"
+        name: "End of countdown"
         icon: "audio-volume-high"
         source: "configSound.qml"
     }

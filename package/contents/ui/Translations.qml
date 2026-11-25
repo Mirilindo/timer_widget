@@ -2,7 +2,7 @@ import QtQuick
 import "../translations/strings.js" as Strings
 
 // Small in-house translation system based on translations/strings.js.
-// Usage: Translations { id: lang }  then  lang.t("start") / lang.tr("set", "05:00")
+// Usage: Translations { id: lang }  then  lang.t("start") / lang.tr("notifTitleNamed", "Tea")
 // Data is imported as JS (resolved at load time) -> reliable and synchronous, unlike the
 // old XHR loading of strings.json which failed silently inside the installed plasmoid.
 QtObject {
