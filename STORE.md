@@ -157,11 +157,11 @@ First public release.
 - Custom end sound (MP3) and end-of-countdown notification
 - 26 languages (EU + Russian + Ukrainian)
 
-## Screenshots to attach (in screenshots/)
+## Screenshots to attach (in screenshots/) — the Store allows 5 images
 1. `widget.png` — widget on the desktop with big digits
-2. `panel.png` — the time in a panel
+2. `menu.png` — right-click menu (countdowns + stopwatch)
 3. `popup.png` — the full timer opened from the panel
-4. `menu.png` — right-click menu (countdowns + stopwatch)
-5. `compact.png` — panel: icon with progress (ring / bar)
-6. `settings.png` — settings (Panel page)
-7. `settings_duration.png` — settings (Countdowns editor)
+4. `settings.png` — settings (Panel page)
+5. `settings_duration.png` — settings (Countdowns editor)
+
+`panel.png` and `compact.png` are shown in the README only.
