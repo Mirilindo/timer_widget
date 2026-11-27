@@ -15,7 +15,7 @@ the time fits the panel it sits in.
 - **Start / Pause / Reset**, clock-based (accurate, survives system sleep); Reset always goes
   back to the chosen duration (countdown) or to zero (stopwatch)
 - **Right-click menu**: Start/Pause, Reset, your countdowns written in plain words
-  (`Countdown 15 min`, `Countdown 1 h`), *Countdown… (other duration)* for any duration, and
+  (`Countdown 15 min`, `Countdown 1 h`), *Other duration…* for any duration, and
   *Start stopwatch*
 - **Countdown editor**: a list of `hh:mm:ss` durations with optional names and reordering
 - **Remembers** the mode and the last chosen duration

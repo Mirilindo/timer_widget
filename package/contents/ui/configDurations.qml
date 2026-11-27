@@ -29,16 +29,9 @@ KCM.SimpleKCM {
 
     function load() {
         page.loading = true
-        var raw = String(page.cfg_presetDurations).trim()
         var arr = null
-        try { arr = JSON.parse(raw) } catch (e) { arr = null }
-        if (!Array.isArray(arr)) { // fall back to the old CSV-of-seconds format
-            arr = []
-            var csv = raw.split(",")
-            for (var k = 0; k < csv.length; k++) {
-                var v = parseInt(csv[k]); if (v > 0) arr.push({ "s": v, "n": "" })
-            }
-        }
+        try { arr = JSON.parse(page.cfg_presetDurations) } catch (e) { arr = null }
+        if (!Array.isArray(arr)) arr = []
         var list = []
         for (var i = 0; i < arr.length; i++) {
             var s = parseInt(arr[i].s) || 0
@@ -96,6 +89,42 @@ KCM.SimpleKCM {
 
         Item { implicitHeight: Kirigami.Units.smallSpacing }
 
+        // Never shown: gives the width shared by the boxes and the units above them.
+        QQC2.SpinBox { id: spinProbe; visible: false; from: 0; to: 99 }
+
+        // Units, written once above the boxes (same layout as the rows below: invisible
+        // copies of the three buttons, then one label per box, centered on it).
+        RowLayout {
+            visible: page.entries.length > 0
+            spacing: Kirigami.Units.smallSpacing
+            Repeater {
+                model: ["go-up", "go-down", "list-remove"]
+                QQC2.ToolButton {
+                    icon.name: modelData
+                    opacity: 0
+                    enabled: false
+                    Accessible.ignored: true
+                }
+            }
+            QQC2.Label {
+                Layout.preferredWidth: spinProbe.implicitWidth
+                horizontalAlignment: Text.AlignHCenter
+                text: "h"
+            }
+            Item { implicitWidth: Kirigami.Units.largeSpacing }
+            QQC2.Label {
+                Layout.preferredWidth: spinProbe.implicitWidth
+                horizontalAlignment: Text.AlignHCenter
+                text: "min"
+            }
+            Item { implicitWidth: Kirigami.Units.largeSpacing }
+            QQC2.Label {
+                Layout.preferredWidth: spinProbe.implicitWidth
+                horizontalAlignment: Text.AlignHCenter
+                text: "s"
+            }
+        }
+
         Repeater {
             model: page.entries
 
@@ -129,18 +158,21 @@ KCM.SimpleKCM {
                 }
 
                 QQC2.SpinBox {
+                    Layout.preferredWidth: spinProbe.implicitWidth
                     from: 0; to: 99
                     value: row.modelData.h
                     onValueModified: page.setField(row.index, "h", value)
                 }
-                QQC2.Label { text: ":" }
+                Item { implicitWidth: Kirigami.Units.largeSpacing }
                 QQC2.SpinBox {
+                    Layout.preferredWidth: spinProbe.implicitWidth
                     from: 0; to: 59
                     value: row.modelData.m
                     onValueModified: page.setField(row.index, "m", value)
                 }
-                QQC2.Label { text: ":" }
+                Item { implicitWidth: Kirigami.Units.largeSpacing }
                 QQC2.SpinBox {
+                    Layout.preferredWidth: spinProbe.implicitWidth
                     from: 0; to: 59
                     value: row.modelData.s
                     onValueModified: page.setField(row.index, "s", value)
@@ -150,7 +182,10 @@ KCM.SimpleKCM {
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 7
                     text: row.modelData.n
                     placeholderText: lang.t("namePlaceholder")
-                    onTextEdited: page.setField(row.index, "n", text)
+                    // Kept in the array at every key press (so moving or removing a row
+                    // keeps it), saved once the field is left (Enter, Tab, a click elsewhere).
+                    onTextEdited: page.entries[row.index].n = text
+                    onEditingFinished: page.persist()
                 }
             }
         }

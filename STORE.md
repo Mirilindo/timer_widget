@@ -57,6 +57,37 @@ traduites automatiquement : vos corrections sont les bienvenues sur GitHub).
 Mise à jour depuis la 1.2 ou avant : l'identifiant du widget a changé, retirez l'ancien Big Timer
 du bureau ou du panneau et ajoutez-le de nouveau (les réglages repartent des nouveaux défauts).
 
+## Changelog — v1.3.1
+Small improvements and fixes.
+- **Centered tooltip** over the widget (icon or digits).
+- **Shorter menu entry**: "Countdown… (other duration)" becomes "Other duration…", so the
+  menu is no wider than needed.
+- **Units in the duration fields**: "h", "min" and "s" in the "Other duration…" window and
+  above the list in the *Countdowns* settings.
+- **New defaults**: a ring around the icon instead of the progress bar, and countdowns of 5,
+  10, 15, 30 min and 1 h (45 min removed). If you never changed these settings, you will see
+  the new ones.
+- Fixed: after the + button, Reset went back to the raised duration instead of the chosen one.
+- Fixed: a half-typed color code no longer breaks the color of the digits.
+- Fixed a warning in the logs at each Plasma start, and a possible memory leak of the menu
+  opened by clicking the digits.
+
+### Changelog — v1.3.1 (FR)
+Petites améliorations et corrections.
+- **Infobulle centrée** au survol du widget (icône ou chiffres).
+- **Entrée de menu plus courte** : « Minuteur… (autre durée) » devient « Autre durée… », le
+  menu n'est plus élargi pour rien.
+- **Unités dans les champs de durée** : « h », « min » et « s » dans la fenêtre « Autre
+  durée… » et au-dessus de la liste dans les réglages *Countdowns*.
+- **Nouveaux défauts** : un anneau autour de l'icône au lieu de la barre de progression, et
+  des minuteurs de 5, 10, 15, 30 min et 1 h (45 min retiré). Si vous n'aviez jamais modifié
+  ces réglages, vous verrez les nouveaux.
+- Corrigé : après le bouton +, Réinitialiser revenait à la durée augmentée au lieu de la durée
+  choisie.
+- Corrigé : un code couleur à moitié tapé ne casse plus la couleur des chiffres.
+- Corrigé : un avertissement dans le journal à chaque démarrage de Plasma, et une possible fuite
+  mémoire du menu ouvert d'un clic sur les chiffres.
+
 ## Changelog — v1.3
 Stopwatch mode, and a simpler widget.
 - **Stopwatch**: "Start stopwatch" in the right-click menu counts up from zero. Picking a

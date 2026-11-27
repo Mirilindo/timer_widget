@@ -45,7 +45,7 @@
     </entry>
     <entry name="compactBar" type="Bool">
       <label>Icon mode: progress bar below the icon instead of a ring around it</label>
-      <default>true</default>
+      <default>false</default>
     </entry>
     <entry name="compactIconScale" type="Int">
       <label>Icon mode: icon size (% of the panel thickness)</label>
@@ -91,7 +91,7 @@
     <!-- ===== Countdowns (right-click / launch menu) ===== -->
     <entry name="presetDurations" type="String">
       <label>Countdown durations (JSON: [{"s":seconds,"n":"name"}])</label>
-      <default>[{"s":300,"n":""},{"s":600,"n":""},{"s":900,"n":""},{"s":1800,"n":""},{"s":2700,"n":""},{"s":3600,"n":""}]</default>
+      <default>[{"s":300,"n":""},{"s":600,"n":""},{"s":900,"n":""},{"s":1800,"n":""},{"s":3600,"n":""}]</default>
     </entry>
 
     <!-- ===== End of countdown ===== -->

@@ -13,6 +13,9 @@ RowLayout {
     property string placeholder: ""
     property string pickLabel: "Pick…"
 
+    // Same rule as the widget: anything else (e.g. a half-typed code) is ignored.
+    readonly property bool valid: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(ctrl.value)
+
     spacing: Kirigami.Units.smallSpacing
 
     Rectangle {
@@ -21,10 +24,10 @@ RowLayout {
         radius: 3
         border.width: 1
         border.color: Kirigami.Theme.disabledTextColor
-        color: ctrl.value !== "" ? ctrl.value : "transparent"
+        color: ctrl.valid ? ctrl.value : "transparent"
         QQC2.Label {
             anchors.centerIn: parent
-            visible: ctrl.value === ""
+            visible: !ctrl.valid
             text: "—"
             opacity: 0.6
         }
@@ -50,7 +53,7 @@ RowLayout {
         text: ctrl.pickLabel
         icon.name: "color-picker"
         onClicked: {
-            colorDialog.selectedColor = ctrl.value !== "" ? ctrl.value : "#ffffff"
+            colorDialog.selectedColor = ctrl.valid ? ctrl.value : "#ffffff"
             colorDialog.open()
         }
     }

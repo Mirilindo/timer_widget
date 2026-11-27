@@ -27,8 +27,12 @@ PlasmoidItem {
     // endTime   = wall-clock epoch (ms) at which it hits zero, valid only while running.
     //             Counting from the clock instead of ticks keeps it accurate over long
     //             durations and survives system sleep.
+    // total     = reference of the current run for the ring and the warning color: the
+    //             picked duration, raised when the + button goes above it. Reset always
+    //             goes back to `target`, never to `total`.
     // targetName = optional name of the picked duration, shown in the notification.
     property int target: 0
+    property int total: 0
     property int remaining: 0
     property double endTime: 0
     property string targetName: ""
@@ -46,29 +50,34 @@ PlasmoidItem {
     // Something has happened since the last reset (drives the compact ring/bar).
     readonly property bool active: root.chrono
         ? (root.running || root.elapsed > 0)
-        : (root.running || (root.target > 0 && root.remaining < root.target))
+        : (root.running || (root.target > 0 && root.remaining !== root.target))
 
     // Warning color: when the remaining time is <= warnPercent % of the total (and > 0).
     readonly property bool warnActive: !root.chrono
         && Plasmoid.configuration.warnEnabled
-        && root.target > 0
+        && root.total > 0
         && root.remaining > 0
-        && root.remaining <= root.target * Plasmoid.configuration.warnPercent / 100
+        && root.remaining <= root.total * Plasmoid.configuration.warnPercent / 100
+
+    // A configured color if it is a valid hex code (#rgb, #rrggbb, #aarrggbb), otherwise
+    // the fallback: a half-typed code must not break the digits color.
+    function colorOr(value, fallback) {
+        return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value) ? value : fallback
+    }
 
     // Digits color, shared by every view: red once the countdown is over, warning color
     // near the end, otherwise the configured (or theme) color.
     readonly property color digitsColor: (!root.chrono && root.remaining <= 0)
         ? Kirigami.Theme.negativeTextColor
         : root.warnActive
-          ? (Plasmoid.configuration.warnColor !== ""
-             ? Plasmoid.configuration.warnColor : Kirigami.Theme.negativeTextColor)
-          : (Plasmoid.configuration.fontColor !== ""
-             ? Plasmoid.configuration.fontColor : Kirigami.Theme.textColor)
+          ? root.colorOr(Plasmoid.configuration.warnColor, Kirigami.Theme.negativeTextColor)
+          : root.colorOr(Plasmoid.configuration.fontColor, Kirigami.Theme.textColor)
     readonly property string digitsFamily: Plasmoid.configuration.fontFamily !== ""
         ? Plasmoid.configuration.fontFamily : Kirigami.Theme.defaultFont.family
 
     Component.onCompleted: {
         root.target = Math.max(1, Plasmoid.configuration.lastDuration)
+        root.total = root.target
         root.remaining = root.target
         root.targetName = Plasmoid.configuration.lastDurationName
         root.rebuildPresets()
@@ -109,7 +118,10 @@ PlasmoidItem {
             root.running = true
             return
         }
-        if (root.remaining <= 0) root.remaining = root.target
+        if (root.remaining <= 0) {
+            root.total = root.target
+            root.remaining = root.target
+        }
         root.endTime = Date.now() + root.remaining * 1000
         root.running = true
     }
@@ -131,6 +143,7 @@ PlasmoidItem {
     function reset() {
         root.running = false
         root.endTime = 0
+        root.total = root.target
         root.remaining = root.target
         root.elapsedMs = 0
         root.runStartTime = 0
@@ -145,6 +158,7 @@ PlasmoidItem {
         root.setMode(0)
         root.reset()
         root.target = s
+        root.total = s
         root.remaining = s
         root.targetName = name ? name : ""
         Plasmoid.configuration.lastDuration = s
@@ -166,8 +180,9 @@ PlasmoidItem {
             : root.remaining
         var v = Math.max(0, base + delta)
         root.remaining = v
-        // Keep the ring/progress consistent if we went above the original target.
-        if (v > root.target) root.target = v
+        // Keep the ring/progress consistent if we went above the run's total (the picked
+        // duration itself is left alone, so Reset still goes back to it).
+        if (v > root.total) root.total = v
         if (root.running) {
             if (v <= 0) {
                 // Reached zero by removing time: stop silently (no beep/notification).
@@ -276,20 +291,10 @@ PlasmoidItem {
         PlasmaCore.Action { }
     }
     // presetDurations = JSON [{"s":seconds,"n":"name"}]; array order = menu order.
-    // Falls back to the old CSV-of-seconds format.
     function parsePresets() {
-        var raw = String(Plasmoid.configuration.presetDurations).trim()
         var list = null
-        try { list = JSON.parse(raw) } catch (e) { list = null }
-        if (!Array.isArray(list)) {
-            list = []
-            var csv = raw.split(",")
-            for (var k = 0; k < csv.length; k++) {
-                var v = parseInt(csv[k])
-                if (v > 0) list.push({ "s": v, "n": "" })
-            }
-        }
-        return list
+        try { list = JSON.parse(Plasmoid.configuration.presetDurations) } catch (e) { list = null }
+        return Array.isArray(list) ? list : []
     }
     function rebuildPresets() {
         var old = root.presetActions
@@ -325,21 +330,33 @@ PlasmoidItem {
         id: menuItemComponent
         PlasmaExtras.MenuItem { }
     }
+    // Items of the last opening, destroyed before building new ones (clearMenuItems only
+    // takes them out of the menu).
+    property var launchMenuItems: []
     // Opens the launch menu under `item` (the clicked digits).
     function openLaunchMenu(item) {
         launchMenu.clearMenuItems()
-        for (var i = 0; i < root.launchActions.length; i++) {
-            launchMenu.addMenuItem(menuItemComponent.createObject(launchMenu,
-                                                                  { action: root.launchActions[i] }))
+        for (var j = 0; j < root.launchMenuItems.length; j++) {
+            // null if Plasma already deleted it.
+            if (root.launchMenuItems[j]) root.launchMenuItems[j].destroy()
         }
+        var created = []
+        for (var i = 0; i < root.launchActions.length; i++) {
+            var mi = menuItemComponent.createObject(launchMenu, { action: root.launchActions[i] })
+            launchMenu.addMenuItem(mi)
+            created.push(mi)
+        }
+        root.launchMenuItems = created
         launchMenu.visualParent = item
         launchMenu.openRelative()
     }
 
-    // "Countdown… (other duration)" window
+    // "Other duration…" window
     Window {
         id: setTimeWindow
-        width: Kirigami.Units.gridUnit * 18
+        // Wide enough for the three boxes and their units.
+        width: Math.max(Kirigami.Units.gridUnit * 18,
+                        timeRow.implicitWidth + Kirigami.Units.largeSpacing * 2)
         height: Kirigami.Units.gridUnit * 9
         minimumWidth: width
         minimumHeight: height
@@ -362,14 +379,19 @@ PlasmoidItem {
             anchors.margins: Kirigami.Units.largeSpacing
             spacing: Kirigami.Units.largeSpacing
 
+            // Each box followed by its unit, written like in the menu ("1 h 30 min").
             RowLayout {
+                id: timeRow
                 Layout.alignment: Qt.AlignHCenter
                 spacing: Kirigami.Units.smallSpacing
                 QQC2.SpinBox { id: inH; from: 0; to: 99 }
-                QQC2.Label { text: ":" }
+                QQC2.Label { text: "h" }
+                Item { implicitWidth: Kirigami.Units.largeSpacing }
                 QQC2.SpinBox { id: inM; from: 0; to: 59 }
-                QQC2.Label { text: ":" }
+                QQC2.Label { text: "min" }
+                Item { implicitWidth: Kirigami.Units.largeSpacing }
                 QQC2.SpinBox { id: inS; from: 0; to: 59 }
+                QQC2.Label { text: "s" }
             }
 
             RowLayout {
@@ -400,9 +422,12 @@ PlasmoidItem {
     readonly property bool plusMinus: Plasmoid.configuration.showPlusMinus && !root.chrono
 
     component TimerButton: PlasmaComponents.Button {
-        icon.width: root.btnSize > 0 ? Math.round(root.btnSize * 1.4)
-                                     : Kirigami.Units.iconSizes.smallMedium  // 22 px: Breeze draws these icons up to 24
-        icon.height: icon.width
+        // Computed once and given to both sides: "icon.height: icon.width" is a binding loop,
+        // since `icon` is a single grouped value.
+        readonly property int iconPx: root.btnSize > 0 ? Math.round(root.btnSize * 1.4)
+                                                       : Kirigami.Units.iconSizes.smallMedium  // 22 px: Breeze draws these icons up to 24
+        icon.width: iconPx
+        icon.height: iconPx
         font.pointSize: root.btnSize > 0 ? root.btnSize : Kirigami.Theme.defaultFont.pointSize
         display: root.btnText ? QQC2.AbstractButton.TextBesideIcon : QQC2.AbstractButton.IconOnly
         // Icon only: the text becomes a tooltip.
@@ -532,6 +557,29 @@ PlasmoidItem {
 
     toolTipMainText: root.chrono ? lang.t("modeStopwatch") : lang.t("modeCountdown")
     toolTipSubText: root.fmt(root.shown)
+    // Custom tooltip content so both lines are centered (Plasma's default one is
+    // left-aligned). The two texts above are kept for accessibility.
+    toolTipItem: Item {
+        implicitWidth: tipColumn.implicitWidth + Kirigami.Units.gridUnit
+        implicitHeight: tipColumn.implicitHeight + Kirigami.Units.gridUnit
+        ColumnLayout {
+            id: tipColumn
+            anchors.centerIn: parent
+            spacing: 0
+            Kirigami.Heading {
+                Layout.alignment: Qt.AlignHCenter
+                level: 3
+                text: root.toolTipMainText
+                horizontalAlignment: Text.AlignHCenter
+            }
+            PlasmaComponents.Label {
+                Layout.alignment: Qt.AlignHCenter
+                text: root.toolTipSubText
+                horizontalAlignment: Text.AlignHCenter
+                opacity: 0.75
+            }
+        }
+    }
 
     // Logo: a theme icon (drawn square by Kirigami.Icon) or a custom image (PreserveAspectFit,
     // so a rectangular logo keeps its ratio).
@@ -631,8 +679,8 @@ PlasmoidItem {
 
         // Countdown: time left (empties) or elapsed (fills). Stopwatch: no target, so the
         // ring/bar works like a second hand, one full turn per minute.
-        readonly property real progress: root.target > 0
-            ? Math.max(0, Math.min(1, root.remaining / root.target)) : 0
+        readonly property real progress: root.total > 0
+            ? Math.max(0, Math.min(1, root.remaining / root.total)) : 0
         readonly property real sweep: root.elapsed > 0 && root.elapsed % 60 === 0
             ? 1 : (root.elapsed % 60) / 60
         readonly property real fraction: root.chrono
